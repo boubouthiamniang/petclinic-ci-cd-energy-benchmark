@@ -38,6 +38,7 @@ jobs:
 
 
       - name: Show Energy Results
+        id: eco
         uses: green-coding-solutions/eco-ci-energy-estimation@v3 # use hash or @vX here (See note below)
         with:
           task: display-results
@@ -45,7 +46,7 @@ jobs:
 
       - name: Print total data JSON
         run: |
-          echo "Total data JSON: ${{ steps.total-measurement-step.outputs.data-total-json }}"
+          echo "Total data JSON: ${{ steps.eco.outputs.data-total-json }}"
 
       - name: Upload total-data.json
         uses: actions/upload-artifact@v4
