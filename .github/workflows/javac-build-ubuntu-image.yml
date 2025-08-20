@@ -1,0 +1,28 @@
+# Java CI with Javac (Fixed)
+name: Java CI with Javac
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        java: [ '17' ]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up JDK ${{ matrix.java }}
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ matrix.java }}
+          distribution: 'adopt'
+      # Use Maven to fetch dependencies (without building the project)
+      - name: Download dependencies
+        run: ./mvnw dependency:copy-dependencies -DoutputDirectory=libs -DincludeScope=runtime
+      - name: Compile with javac
+        run: |
+          mkdir -p build/classes
+          find src/main/java -name "*.java" > sources.txt
+          javac -d build/classes -cp "libs/*" @sources.txt
