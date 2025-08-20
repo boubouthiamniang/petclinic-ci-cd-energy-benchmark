@@ -18,7 +18,7 @@ jobs:
         with:
           java-version: ${{matrix.java}}
           distribution: 'adopt' 
-      - name: Make gradlew executable
-        run: chmod +x ./gradlew
+      - name: Make mvnw executable
+        run: chmod +x ./mvnw
       - name: Build with Maven Wrapper
         run: ./mvnw -B verify
