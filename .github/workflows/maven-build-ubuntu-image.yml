@@ -17,7 +17,8 @@ jobs:
         uses: actions/setup-java@v4
         with:
           java-version: ${{matrix.java}}
-          distribution: 'adopt'
-          cache: maven
+          distribution: 'adopt' 
+      - name: Make gradlew executable
+        run: chmod +x ./gradlew
       - name: Build with Maven Wrapper
         run: ./mvnw -B verify
