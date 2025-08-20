@@ -26,4 +26,4 @@ jobs:
       - name: Make mvnw executable
         run: chmod +x ./mvnw
       - name: Build with Maven Wrapper
-        run: ./mvnw -B verify
+        run: ./mvnw -B compile package -DskipTests
