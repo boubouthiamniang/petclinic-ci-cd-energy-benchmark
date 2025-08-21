@@ -43,8 +43,6 @@ jobs:
         with:
           task: display-results
           json-output: true
-        env:
-          ELECTRICITYMAP_API_TOKEN: ${{ secrets.ELECTRICITYMAP_API_TOKEN }}
 
       - name: Print total data JSON
         run: |
