@@ -8,7 +8,7 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    container: eclipse-temurin:17-jdk-bullseye # Debian-based Java image
+    container:  eclipse-temurin:17-jdk # Debian-based Java image
     strategy:
       matrix:
         java: [ '17' ]
