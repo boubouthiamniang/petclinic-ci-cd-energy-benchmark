@@ -17,7 +17,7 @@ jobs:
         uses: actions/setup-java@v4
         with:
           java-version: ${{ matrix.java }}
-          distribution: 'adopt'
+          distribution: 'temurin'
       - name: Make mvnw executable
         run: chmod +x ./mvnw
       # Use Maven to fetch dependencies (without building the project)
