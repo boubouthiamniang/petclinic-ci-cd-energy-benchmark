@@ -8,29 +8,24 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    container: alpine:latest
+    container: eclipse-temurin:17-jdk-alpine
     strategy:
       matrix:
         java: [ '17' ]
     steps:
 
+      - uses: actions/checkout@v4
+
       - name: Install dependencies
         run: |
           apk update
-          apk add --no-cache git curl bash openjdk17 maven python3 py3-pip py3-virtualenv coreutils
+          apk add --no-cache git bash python3 py3-pip py3-virtualenv coreutils
 
       - name: Start Measurement
         uses: green-coding-solutions/eco-ci-energy-estimation@v3 # use hash or @vX here (See note below)
         with:
           task: start-measurement
-
-      - uses: actions/checkout@v4
-      - name: Set JAVA_HOME
-        run: |
-          export JAVA_HOME=/usr/lib/jvm/java-17-openjdk
-          echo "JAVA_HOME=/usr/lib/jvm/java-17-openjdk" >> $GITHUB_ENV
-          echo "PATH=$JAVA_HOME/bin:$PATH" >> $GITHUB_ENV
-       
+      
       - name: Preparatory Tasks Measure
         uses: green-coding-solutions/eco-ci-energy-estimation@v3 # use hash or @vX here (See note below)
         with:
