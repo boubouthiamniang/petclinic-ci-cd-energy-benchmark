@@ -20,13 +20,29 @@ jobs:
         run: |
           apk update
           apk add --no-cache git bash python3 py3-pip py3-virtualenv coreutils go
+          # Ensure bash is in /usr/bin for GitHub Actions
+          ln -sf /bin/bash /usr/bin/bash
+          python3 -m ensurepip --upgrade
+          python3 -m pip install --upgrade pip
 
-       # 👇 this clones the eco-ci action code into the correct place
+      - name: Create Python virtualenv
+        run: |
+          python3 -m venv /tmp/eco-ci/venv
+          source /tmp/eco-ci/venv/bin/activate
+          pip install --upgrade pip
+          echo "Virtualenv created at /tmp/eco-ci/venv"
+
       - name: Checkout eco-ci action code
         run: |
           mkdir -p /home/runner/work/_actions/green-coding-solutions/
           git clone --depth 1 --branch v3 https://github.com/green-coding-solutions/eco-ci-energy-estimation.git \
             /home/runner/work/_actions/green-coding-solutions/eco-ci-energy-estimation/v3
+
+      - name: Initialize eco-ci
+        run: |
+          source /tmp/eco-ci/venv/bin/activate
+          /home/runner/work/_actions/green-coding-solutions/eco-ci-energy-estimation/v3/scripts/setup.sh initialize -g true
+
 
       - name: Start Measurement
         uses: green-coding-solutions/eco-ci-energy-estimation@v3 # use hash or @vX here (See note below)
