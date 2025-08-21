@@ -1,4 +1,4 @@
-name: Java CI with Maven on Alpine
+name: Java CI with Maven on Alpine + eco-ci
 
 on:
   push:
@@ -13,42 +13,47 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # Install system dependencies
       - name: Install dependencies
         run: |
           apk update
           apk add --no-cache bash git coreutils go g++ make cmake python3 py3-pip
+          python3 -m ensurepip
+          python3 -m pip install --upgrade pip
 
+      # Make Maven wrapper executable
       - name: Make mvnw executable
         run: chmod +x ./mvnw
 
-      - name: Start Measurement
-        uses: green-coding-solutions/eco-ci-energy-estimation@v3
-        with:
-          task: start-measurement
+      # Clone eco-ci repo
+      - name: Clone eco-ci repo
+        run: |
+          git clone --depth 1 --branch v3 https://github.com/green-coding-solutions/eco-ci-energy-estimation.git eco-ci
+          chmod +x eco-ci/scripts/setup.sh
 
+      # Initialize eco-ci measurement
+      - name: Initialize eco-ci
+        run: ./eco-ci/scripts/setup.sh initialize -g true
+
+      # Start eco-ci measurement
+      - name: Start Measurement
+        run: python3 eco-ci/scripts/measurement.py start --branch main --send-data true
+
+      # Build Maven project
       - name: Build with Maven Wrapper
         run: ./mvnw -B compile package -DskipTests
 
+      # Get eco-ci measurement after build
       - name: Get Build Measurement
-        id: total-measurement-step
-        uses: green-coding-solutions/eco-ci-energy-estimation@v3
-        with:
-          task: get-measurement
-          label: 'Build Maven Alpine'
+        run: python3 eco-ci/scripts/measurement.py get --label "Build Maven Alpine"
 
+      # Display eco-ci results
       - name: Show Energy Results
-        id: eco
-        uses: green-coding-solutions/eco-ci-energy-estimation@v3
-        with:
-          task: display-results
-          json-output: true
+        run: python3 eco-ci/scripts/measurement.py display --json-output true
 
-      - name: Print total data JSON
-        run: |
-          echo "Total data JSON: ${{ steps.eco.outputs.data-total-json }}"
-
+      # Upload JSON artifact
       - name: Upload total-data.json
         uses: actions/upload-artifact@v4
         with:
           name: eco-ci-total-data
-          path: /tmp/eco-ci/total-data.json
+          path: eco-ci/total-data.json
