@@ -16,7 +16,7 @@ jobs:
       - name: Install dependencies
         run: |
           apt-get update
-          apt-get install -y git curl bash default-jdk gradle python3 python3-pip python3-venv coreutils
+          apt-get install -y git curl bash gradle coreutils
 
       - name: Start Measurement
         uses: green-coding-solutions/eco-ci-energy-estimation@v3 # use hash or @vX here (See note below)
