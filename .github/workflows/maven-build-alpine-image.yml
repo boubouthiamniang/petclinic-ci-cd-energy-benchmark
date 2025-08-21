@@ -19,7 +19,7 @@ jobs:
       - name: Install dependencies
         run: |
           apk update
-          apk add --no-cache git bash python3 py3-pip py3-virtualenv coreutils
+          apk add --no-cache git bash python3 py3-pip py3-virtualenv coreutils go
 
        # 👇 this clones the eco-ci action code into the correct place
       - name: Checkout eco-ci action code
