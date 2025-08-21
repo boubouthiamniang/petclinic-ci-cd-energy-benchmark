@@ -1,4 +1,4 @@
-name: Java CI with Maven Alpine
+name: Java CI with Maven on Alpine + Python
 
 on:
   push:
@@ -19,11 +19,13 @@ jobs:
       - name: Install dependencies
         run: |
           apk update
-          apk add --no-cache git bash python3 py3-pip py3-virtualenv coreutils go
+          apk add --no-cache \
+            git bash python3 py3-pip py3-virtualenv coreutils go \
+            cmake make g++  # <-- required for xgboost build
           python3 -m venv venv
           . venv/bin/activate
           pip install --upgrade pip
-      
+
       - name: Install Python requirements
         run: |
           . venv/bin/activate
@@ -57,7 +59,7 @@ jobs:
         uses: green-coding-solutions/eco-ci-energy-estimation@v3
         with:
           task: get-measurement
-          label: 'Build maven alpine'
+          label: 'Build Maven Alpine'
 
       - name: Show Energy Results
         id: eco
