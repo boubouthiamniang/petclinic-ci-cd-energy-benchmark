@@ -1,59 +1,62 @@
-name: Java CI with Gradle Alpine
+name: Java CI with Gradle Debian
 on:
   push:
     branches: [ main ]
   pull_request:
     branches: [ main ]
+
 jobs:
   build:
     runs-on: ubuntu-latest
-    container: eclipse-temurin:17-jdk
+    container: eclipse-temurin:17-jdk-bullseye # Debian-based Java image
     strategy:
       matrix:
         java: [ '17' ]
     steps:
 
+      - uses: actions/checkout@v4
+
       - name: Install dependencies
         run: |
           apt-get update
-          apt-get install -y git curl bash gradle coreutils
+          apt-get install -y git curl bash gradle coreutils python3 python3-venv python3-pip
 
-      - name: Start Measurement
-        uses: green-coding-solutions/eco-ci-energy-estimation@v3 # use hash or @vX here (See note below)
-        with:
-          task: start-measurement
-
-      - uses: actions/checkout@v4
       - name: Set JAVA_HOME
         run: |
-          export JAVA_HOME=/usr/lib/jvm/java-17-openjdk
-          echo "JAVA_HOME=/usr/lib/jvm/java-17-openjdk" >> $GITHUB_ENV
+          export JAVA_HOME=/usr/lib/jvm/java-17-temurin
+          echo "JAVA_HOME=/usr/lib/jvm/java-17-temurin" >> $GITHUB_ENV
           echo "PATH=$JAVA_HOME/bin:$PATH" >> $GITHUB_ENV
+
+      - name: Start Measurement
+        uses: green-coding-solutions/eco-ci-energy-estimation@v3
+        with:
+          task: start-measurement
 
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
 
       - name: Preparatory Tasks Measure
-        uses: green-coding-solutions/eco-ci-energy-estimation@v3 # use hash or @vX here (See note below)
+        uses: green-coding-solutions/eco-ci-energy-estimation@v3
         with:
           task: get-measurement
           label: 'Preparatory Tasks Measure'    
 
       - name: Make gradlew executable
         run: chmod +x ./gradlew
+
       - name: Build with Gradle
         run: ./gradlew build --exclude-task test
 
       - name: Get Build Measurement
         id: total-measurement-step
-        uses: green-coding-solutions/eco-ci-energy-estimation@v3 # use hash or @vX here (See note below)
+        uses: green-coding-solutions/eco-ci-energy-estimation@v3
         with:
           task: get-measurement
-          label: 'Build gradle ubuntu'   
+          label: 'Build gradle Debian'   
 
       - name: Show Energy Results
         id: eco
-        uses: green-coding-solutions/eco-ci-energy-estimation@v3 # use hash or @vX here (See note below)
+        uses: green-coding-solutions/eco-ci-energy-estimation@v3
         with:
           task: display-results
           json-output: true
@@ -66,4 +69,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: eco-ci-total-data
-          path: /tmp/eco-ci/total-data.json    
+          path: /tmp/eco-ci/total-data.json
