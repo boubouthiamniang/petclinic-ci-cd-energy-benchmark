@@ -24,6 +24,11 @@ jobs:
         with:
           java-version: ${{matrix.java}}
           distribution: 'temurin' 
+      - name: Get checkout and setup Measurement
+        uses: green-coding-solutions/eco-ci-energy-estimation@v3 # use hash or @vX here (See note below)
+        with:
+          task: get-measurement
+          label: 'Get checkout and setup Measurement'
       - name: Make mvnw executable
         run: chmod +x ./mvnw
       - name: Build with Maven Wrapper
