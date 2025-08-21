@@ -21,6 +21,13 @@ jobs:
           apk update
           apk add --no-cache git bash python3 py3-pip py3-virtualenv coreutils
 
+       # 👇 this clones the eco-ci action code into the correct place
+      - name: Checkout eco-ci action code
+        run: |
+          mkdir -p /home/runner/work/_actions/green-coding-solutions/
+          git clone --depth 1 --branch v3 https://github.com/green-coding-solutions/eco-ci-energy-estimation.git \
+            /home/runner/work/_actions/green-coding-solutions/eco-ci-energy-estimation/v3
+
       - name: Start Measurement
         uses: green-coding-solutions/eco-ci-energy-estimation@v3 # use hash or @vX here (See note below)
         with:
