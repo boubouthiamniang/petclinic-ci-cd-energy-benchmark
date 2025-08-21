@@ -1,6 +1,5 @@
 # Java CI with Maven on Alpine
 name: Java CI with Maven Alpine
-
 on:
   push:
     branches: [ main ]
@@ -14,52 +13,37 @@ jobs:
     strategy:
       matrix:
         java: [ '17' ]
-
     steps:
       - uses: actions/checkout@v4
 
-      # Install dependencies, including Python but no system-wide pip upgrade
       - name: Install dependencies
         run: |
           apk update
-          apk add --no-cache git bash python3 py3-virtualenv coreutils go
+          apk add --no-cache git bash python3=3.10.15-r0 py3-pip py3-virtualenv coreutils go
 
-      # Setup Python virtual environment for pip installs
-      - name: Setup Python virtual environment
-        run: |
-          python3 -m venv /tmp/eco-ci/venv
-          source /tmp/eco-ci/venv/bin/activate
-          pip install --upgrade pip setuptools wheel
-
-      # Clone eco-ci action code locally (optional, for reference)
       - name: Checkout eco-ci action code
         run: |
           mkdir -p /home/runner/work/_actions/green-coding-solutions/
           git clone --depth 1 --branch v3 https://github.com/green-coding-solutions/eco-ci-energy-estimation.git \
             /home/runner/work/_actions/green-coding-solutions/eco-ci-energy-estimation/v3
 
-      # Start energy measurement
       - name: Start Measurement
         uses: green-coding-solutions/eco-ci-energy-estimation@v3
         with:
           task: start-measurement
 
-      # Preparatory tasks measurement
       - name: Preparatory Tasks Measure
         uses: green-coding-solutions/eco-ci-energy-estimation@v3
         with:
           task: get-measurement
           label: 'Preparatory Tasks Measure'
 
-      # Make Maven wrapper executable
       - name: Make mvnw executable
         run: chmod +x ./mvnw
 
-      # Build with Maven wrapper
       - name: Build with Maven Wrapper
         run: ./mvnw -B compile package -DskipTests
 
-      # Get build measurement
       - name: Get Build Measurement
         id: total-measurement-step
         uses: green-coding-solutions/eco-ci-energy-estimation@v3
@@ -67,7 +51,6 @@ jobs:
           task: get-measurement
           label: 'Build maven alpine'
 
-      # Show energy results
       - name: Show Energy Results
         id: eco
         uses: green-coding-solutions/eco-ci-energy-estimation@v3
@@ -75,12 +58,10 @@ jobs:
           task: display-results
           json-output: true
 
-      # Print JSON output
       - name: Print total data JSON
         run: |
           echo "Total data JSON: ${{ steps.eco.outputs.data-total-json }}"
 
-      # Upload artifact
       - name: Upload total-data.json
         uses: actions/upload-artifact@v4
         with:
