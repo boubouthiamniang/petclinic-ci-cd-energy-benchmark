@@ -9,10 +9,11 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    container: eclipse-temurin:17-jdk-alpine
+    container: eclipse-temurin:17-jdk-alpine  # Public image
     strategy:
       matrix:
         java: [ '17' ]
+
     steps:
       - uses: actions/checkout@v4
 
@@ -21,7 +22,9 @@ jobs:
           apk update
           apk add --no-cache \
             git bash python3 py3-pip py3-virtualenv coreutils go \
-            cmake make g++  # <-- required for xgboost build
+            g++ make cmake  # Required to build xgboost
+
+          # Setup Python virtualenv
           python3 -m venv venv
           . venv/bin/activate
           pip install --upgrade pip
@@ -29,7 +32,7 @@ jobs:
       - name: Install Python requirements
         run: |
           . venv/bin/activate
-          pip install numpy xgboost
+          pip install numpy xgboost==1.7.5  # pinned version works on Alpine
 
       - name: Checkout eco-ci action code
         run: |
