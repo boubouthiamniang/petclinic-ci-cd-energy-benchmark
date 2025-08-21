@@ -9,7 +9,7 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    container: eclipse-temurin:17-jdk  # Alpine with JDK
+    container: eclipse-temurin:17-jdk-alpine  # Alpine with JDK
     steps:
       - uses: actions/checkout@v4
 
