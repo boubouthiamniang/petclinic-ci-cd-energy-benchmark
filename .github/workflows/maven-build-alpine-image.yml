@@ -1,5 +1,5 @@
-# Java CI with Maven on Alpine
 name: Java CI with Maven Alpine
+
 on:
   push:
     branches: [ main ]
@@ -19,7 +19,9 @@ jobs:
       - name: Install dependencies
         run: |
           apk update
-          apk add --no-cache git bash python3=3.10.15-r0 py3-pip py3-virtualenv coreutils go
+          apk add --no-cache git bash python3 py3-pip py3-virtualenv coreutils go
+          python3 -m ensurepip
+          python3 -m pip install --upgrade pip
 
       - name: Checkout eco-ci action code
         run: |
