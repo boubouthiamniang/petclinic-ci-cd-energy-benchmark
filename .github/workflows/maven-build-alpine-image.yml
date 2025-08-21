@@ -16,7 +16,7 @@ jobs:
       - name: Install dependencies
         run: |
           apk update
-          apk add --no-cache bash git coreutils go g++ make cmake
+          apk add --no-cache bash git coreutils go g++ make cmake python3 py3-venv
 
       - name: Make mvnw executable
         run: chmod +x ./mvnw
