@@ -9,7 +9,7 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    container: eclipse-temurin:17-jdk-alpine  # Public image
+    container: python:3.12-alpine  # Alpine base with Python 3.12
     strategy:
       matrix:
         java: [ '17' ]
@@ -20,11 +20,12 @@ jobs:
       - name: Install dependencies
         run: |
           apk update
-          apk add --no-cache \
-            git bash python3 py3-pip py3-virtualenv coreutils go \
-            g++ make cmake  # Required to build xgboost
+          apk add --no-cache bash git curl unzip tar g++ make cmake coreutils go \
+            openjdk17  # Install OpenJDK 17 on Alpine
+          java -version
 
-          # Setup Python virtualenv
+      - name: Setup Python virtualenv
+        run: |
           python3 -m venv venv
           . venv/bin/activate
           pip install --upgrade pip
@@ -32,7 +33,7 @@ jobs:
       - name: Install Python requirements
         run: |
           . venv/bin/activate
-          pip install numpy xgboost==1.7.5  # pinned version works on Alpine
+          pip install numpy pandas xgboost==1.7.5
 
       - name: Checkout eco-ci action code
         run: |
