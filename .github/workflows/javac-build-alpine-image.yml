@@ -15,16 +15,16 @@ jobs:
         java: [ '17' ]
     steps:
 
+      - name: Install dependencies
+        run: |
+          apk update
+          apk add --no-cache git curl bash openjdk17 maven
 
       - name: Start Measurement
         uses: green-coding-solutions/eco-ci-energy-estimation@v3 # use hash or @vX here (See note below)
         with:
           task: start-measurement
 
-      - name: Install dependencies
-        run: |
-          apk update
-          apk add --no-cache git curl bash openjdk17 maven
       - uses: actions/checkout@v4
       - name: Set JAVA_HOME
         run: |
