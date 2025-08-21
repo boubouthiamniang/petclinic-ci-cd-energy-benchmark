@@ -14,6 +14,13 @@ jobs:
       matrix:
         java: [ '17' ]
     steps:
+
+
+      - name: Start Measurement
+        uses: green-coding-solutions/eco-ci-energy-estimation@v3 # use hash or @vX here (See note below)
+        with:
+          task: start-measurement
+
       - name: Install dependencies
         run: |
           apk update
@@ -24,6 +31,13 @@ jobs:
           export JAVA_HOME=/usr/lib/jvm/java-17-openjdk
           echo "JAVA_HOME=/usr/lib/jvm/java-17-openjdk" >> $GITHUB_ENV
           echo "PATH=$JAVA_HOME/bin:$PATH" >> $GITHUB_ENV
+
+      - name: Preparatory Tasks Measure
+        uses: green-coding-solutions/eco-ci-energy-estimation@v3 # use hash or @vX here (See note below)
+        with:
+          task: get-measurement
+          label: 'Preparatory Tasks Measure'      
+
       - name: Make mvnw executable
         run: chmod +x ./mvnw
       # Use Maven to fetch dependencies (without building the project)
@@ -34,3 +48,27 @@ jobs:
           mkdir -p build/classes
           find src/main/java -name "*.java" > sources.txt
           javac -d build/classes -cp "libs/*" @sources.txt
+
+      - name: Get Build Measurement
+        id: total-measurement-step
+        uses: green-coding-solutions/eco-ci-energy-estimation@v3 # use hash or @vX here (See note below)
+        with:
+          task: get-measurement
+          label: 'Build javac alpine'  
+
+      - name: Show Energy Results
+        id: eco
+        uses: green-coding-solutions/eco-ci-energy-estimation@v3 # use hash or @vX here (See note below)
+        with:
+          task: display-results
+          json-output: true
+
+      - name: Print total data JSON
+        run: |
+          echo "Total data JSON: ${{ steps.eco.outputs.data-total-json }}"
+
+      - name: Upload total-data.json
+        uses: actions/upload-artifact@v4
+        with:
+          name: eco-ci-total-data
+          path: /tmp/eco-ci/total-data.json

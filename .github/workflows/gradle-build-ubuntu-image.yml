@@ -12,15 +12,53 @@ jobs:
       matrix:
         java: [ '17' ]
     steps:
+
+      - name: Start Measurement
+        uses: green-coding-solutions/eco-ci-energy-estimation@v3 # use hash or @vX here (See note below)
+        with:
+          task: start-measurement
+
       - uses: actions/checkout@v4
       - name: Set up JDK ${{matrix.java}}
         uses: actions/setup-java@v4
-        with:
+        with: 
           java-version: ${{matrix.java}}
           distribution: 'temurin'
+
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
+
+      - name: Preparatory Tasks Measure
+        uses: green-coding-solutions/eco-ci-energy-estimation@v3 # use hash or @vX here (See note below)
+        with:
+          task: get-measurement
+          label: 'Preparatory Tasks Measure'  
+
       - name: Make gradlew executable
         run: chmod +x ./gradlew
       - name: Build with Gradle
         run: ./gradlew build --exclude-task test
+
+      - name: Get Build Measurement
+        id: total-measurement-step
+        uses: green-coding-solutions/eco-ci-energy-estimation@v3 # use hash or @vX here (See note below)
+        with:
+          task: get-measurement
+          label: 'Build gradle ubuntu' 
+          
+      - name: Show Energy Results
+        id: eco
+        uses: green-coding-solutions/eco-ci-energy-estimation@v3 # use hash or @vX here (See note below)
+        with:
+          task: display-results
+          json-output: true
+
+      - name: Print total data JSON
+        run: |
+          echo "Total data JSON: ${{ steps.eco.outputs.data-total-json }}"
+
+      - name: Upload total-data.json
+        uses: actions/upload-artifact@v4
+        with:
+          name: eco-ci-total-data
+          path: /tmp/eco-ci/total-data.json
