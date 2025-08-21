@@ -16,12 +16,8 @@ jobs:
       - name: Install dependencies
         run: |
           apk update
-          apk add --no-cache bash git coreutils go g++ make cmake python3
-          
-          python3 -m venv venv
-          . venv/bin/activate
-          pip install --upgrade pip
-          
+          apk add --no-cache bash git coreutils go g++ make cmake python3 py3-pip
+
       - name: Make mvnw executable
         run: chmod +x ./mvnw
 
@@ -46,3 +42,13 @@ jobs:
         with:
           task: display-results
           json-output: true
+
+      - name: Print total data JSON
+        run: |
+          echo "Total data JSON: ${{ steps.eco.outputs.data-total-json }}"
+
+      - name: Upload total-data.json
+        uses: actions/upload-artifact@v4
+        with:
+          name: eco-ci-total-data
+          path: /tmp/eco-ci/total-data.json
