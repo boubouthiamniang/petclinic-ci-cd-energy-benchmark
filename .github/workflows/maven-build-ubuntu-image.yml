@@ -11,7 +11,7 @@ jobs:
     strategy:
       matrix:
         java: [ '17', '21' ]
-        #distribution: [ 'temurin', 'corretto', 'zulu', 'liberica', 'microsoft' ]
+        distribution: [ 'temurin', 'corretto'] #, 'zulu', 'liberica', 'microsoft'
     steps:
 
       - name: Start Measurement
@@ -24,7 +24,7 @@ jobs:
         uses: actions/setup-java@v4
         with:
           java-version: ${{matrix.java}}
-          distribution: temurin
+          distribution: ${{ matrix.distribution }}
 
       - name: Preparatory Tasks Measure
         uses: green-coding-solutions/eco-ci-energy-estimation@v3 # use hash or @vX here (See note below)
@@ -55,8 +55,8 @@ jobs:
         run: |
           echo "Total data JSON: ${{ steps.eco.outputs.data-total-json }}"
 
-      #- name: Upload total-data.json
-      #  uses: actions/upload-artifact@v4
-      #  with:
-      #    name: eco-ci-total-data-${{ matrix.java }}
-      #    path: /tmp/eco-ci/total-data.json
+      - name: Upload total-data.json
+        uses: actions/upload-artifact@v4
+        with:
+          name: eco-ci-total-data-${{ matrix.java }}-${{ matrix.distribution }}
+          path: /tmp/eco-ci/total-data.json
