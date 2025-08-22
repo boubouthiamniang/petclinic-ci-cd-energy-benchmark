@@ -58,8 +58,8 @@ jobs:
         run: |
           echo "Total data JSON: ${{ steps.eco.outputs.data-total-json }}"
 
-      - name: Upload total-data.json
-        uses: actions/upload-artifact@v4
-        with:
-          name: eco-ci-total-data-${{ matrix.java }}
-          path: /tmp/eco-ci/total-data.json
+      #- name: Upload total-data.json
+      #  uses: actions/upload-artifact@v4
+      #  with:
+      #    name: eco-ci-total-data-${{ matrix.java }}
+      #    path: /tmp/eco-ci/total-data.json
