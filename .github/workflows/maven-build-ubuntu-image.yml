@@ -11,7 +11,7 @@ jobs:
     strategy:
       matrix:
         java: [ '17', '21' ]
-        distribution: [ 'temurin', 'corretto'] #, 'zulu', 'liberica', 'microsoft'
+        distribution: [ 'temurin', 'corretto', 'zulu'] #, 'liberica', 'microsoft'
     steps:
 
       - name: Start Measurement
@@ -58,5 +58,5 @@ jobs:
       - name: Upload total-data.json
         uses: actions/upload-artifact@v4
         with:
-          name: eco-ci-total-data-${{ matrix.java }}-${{ matrix.distribution }}
+          name: eco-ci-total-data-maven-${{ matrix.java }}-${{ matrix.distribution }}
           path: /tmp/eco-ci/total-data.json
