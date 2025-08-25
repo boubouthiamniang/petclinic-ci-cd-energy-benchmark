@@ -1,5 +1,5 @@
 # Java CI with Maven (Fixed)
-name: Java CI with Maven
+name: Java CI with Maven Cached
 on:
   push:
     branches: [ main ]
@@ -25,7 +25,9 @@ jobs:
         with:
           java-version: ${{matrix.java}}
           distribution: ${{ matrix.distribution }}
-      
+          
+      - run: wget --version
+
       - name: Cache Maven packages
         uses: actions/cache@v4
         with:
