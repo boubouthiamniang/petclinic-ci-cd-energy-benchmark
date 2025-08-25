@@ -45,12 +45,6 @@ jobs:
       - name: Test demo-db health
         run: kubectl exec deploy/demo-db -- pg_isready || echo "Demo-DB test skipped"
 
-      - name: Preparatory Tasks Measure
-        uses: green-coding-solutions/eco-ci-energy-estimation@v3 # use hash or @vX here (See note below)
-        with:
-          task: get-measurement
-          label: 'Deploy Tasks Measure'  
-
       - name: Show Energy Results
         id: eco
         uses: green-coding-solutions/eco-ci-energy-estimation@v3 # use hash or @vX here (See note below)
