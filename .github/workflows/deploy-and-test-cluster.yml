@@ -14,6 +14,12 @@ jobs:
   deploy-and-test-cluster:
     runs-on: ubuntu-latest
     steps:
+
+      - name: Start Measurement
+        uses: green-coding-solutions/eco-ci-energy-estimation@v3 # use hash or @vX here (See note below)
+        with:
+          task: start-measurement
+
       - name: Check out the repository
         uses: actions/checkout@v2
 
@@ -31,8 +37,32 @@ jobs:
 
       - name: Test petclinic health
         run: |
-          kubectl exec deploy/petclinic -- curl -f http://localhost:8080/actuator/health
+          kubectl exec deploy/petclinic 
+        #-- curl -f http://localhost:8080/actuator/health
       - name: Test demo-db health
         run: |
           kubectl exec deploy/demo-db -- pg_isready
+
+      - name: Preparatory Tasks Measure
+        uses: green-coding-solutions/eco-ci-energy-estimation@v3 # use hash or @vX here (See note below)
+        with:
+          task: get-measurement
+          label: 'Deploy Tasks Measure'  
+
+      - name: Show Energy Results
+        id: eco
+        uses: green-coding-solutions/eco-ci-energy-estimation@v3 # use hash or @vX here (See note below)
+        with:
+          task: display-results
+          json-output: true
+
+      - name: Print total data JSON
+        run: |
+          echo "Total data JSON: ${{ steps.eco.outputs.data-total-json }}"
+
+      - name: Upload total-data.json
+        uses: actions/upload-artifact@v4
+        with:
+          name: eco-ci-total-data-k8s-deploy-and-test
+          path: /tmp/eco-ci/total-data.json
 
