@@ -33,12 +33,6 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-javac-${{ matrix.java }}-${{ matrix.distribution }}
 
-      - name: Preparatory Tasks Measure
-        uses: green-coding-solutions/eco-ci-energy-estimation@v3 # use hash or @vX here (See note below)
-        with:
-          task: get-measurement
-          label: 'Preparatory Tasks Measure'    
-
       - name: Make mvnw executable
         run: chmod +x ./mvnw
       # Use Maven to fetch dependencies (without building the project)

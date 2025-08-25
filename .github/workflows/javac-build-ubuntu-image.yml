@@ -23,13 +23,7 @@ jobs:
         uses: actions/setup-java@v4
         with:
           java-version: ${{ matrix.java }}
-          distribution: ${{ matrix.distribution }}
-
-      - name: Preparatory Tasks Measure
-        uses: green-coding-solutions/eco-ci-energy-estimation@v3 # use hash or @vX here (See note below)
-        with:
-          task: get-measurement
-          label: 'Preparatory Tasks Measure'    
+          distribution: ${{ matrix.distribution }}  
 
       - name: Make mvnw executable
         run: chmod +x ./mvnw
