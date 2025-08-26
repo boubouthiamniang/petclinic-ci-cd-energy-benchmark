@@ -62,3 +62,4 @@ jobs:
         with:
           name: eco-ci-total-data-gradle-${{ matrix.java }}-${{ matrix.distribution }}
           path: /tmp/eco-ci/total-data.json
+          retention-days: 30

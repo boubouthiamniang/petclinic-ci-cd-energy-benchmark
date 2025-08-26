@@ -5,6 +5,10 @@ on:
     branches: [ main ]
   pull_request:
     branches: [ main ]
+  schedule:
+    # Runs every 30 minutes
+    - cron: "*/30 * * * *"
+    
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -67,3 +71,4 @@ jobs:
         with:
           name: eco-ci-total-data-gradle-${{ matrix.java }}-${{ matrix.distribution }}-cached
           path: /tmp/eco-ci/total-data.json
+          retention-days: 30

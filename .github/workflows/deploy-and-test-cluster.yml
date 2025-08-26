@@ -9,6 +9,9 @@ on:
     branches: [main]
     #paths:
     #  - 'k8s/**'
+  schedule:
+    # Runs every 30 minutes
+    - cron: "*/30 * * * *"
 
 jobs:
   deploy-and-test-cluster:
@@ -61,4 +64,5 @@ jobs:
         with:
           name: eco-ci-total-data-k8s-deploy-and-test
           path: /tmp/eco-ci/total-data.json
+          retention-days: 30
 
