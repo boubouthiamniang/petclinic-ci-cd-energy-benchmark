@@ -24,7 +24,10 @@ jobs:
           sudo snap install microk8s --classic --channel=1.28/stable
           sudo microk8s status --wait-ready
           sudo usermod -aG microk8s $USER
-          sudo chown -R $USER ~/.kube
+          newgrp microk8s
+          mkdir -p $HOME/.kube
+          microk8s config > $HOME/.kube/config
+          chmod 600 $HOME/.kube/config
 
       - name: Enable MicroK8s services
         run: microk8s enable dns storage
