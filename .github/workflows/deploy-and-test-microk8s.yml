@@ -19,15 +19,15 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v2
 
-      - name: Install MicroK8s
-      run: |
-        sudo snap install microk8s --classic --channel=1.28/stable
-        sudo microk8s status --wait-ready
-        # Add runner to microk8s group
-        sudo usermod -aG microk8s $USER
-        # Create kube config directory if it doesn't exist
-        mkdir -p $HOME/.kube
-        sudo chown -R $USER:$USER $HOME/.kube
+      - name: Install MicroK8s and Setup Kubeconfig
+        run: |
+          sudo snap install microk8s --classic --channel=1.28/stable
+          sudo microk8s status --wait-ready
+          # Add runner to microk8s group
+          sudo usermod -aG microk8s $USER
+          # Create kube config directory if it doesn't exist
+          mkdir -p $HOME/.kube
+          sudo chown -R $USER:$USER $HOME/.kube
 
 
       - name: Enable MicroK8s Addons
