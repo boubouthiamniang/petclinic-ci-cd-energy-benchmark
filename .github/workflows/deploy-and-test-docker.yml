@@ -49,86 +49,15 @@ jobs:
             sleep 5
           done
 
-      - name: Build Spring Boot Application
-        run: |
-          echo "Building Spring Boot application..."
-          
-          # Check if Maven wrapper exists
-          if [ -f "./mvnw" ]; then
-            echo "Using Maven wrapper..."
-            chmod +x ./mvnw
-            ./mvnw clean package -DskipTests
-          elif [ -f "pom.xml" ]; then
-            echo "Using system Maven..."
-            mvn clean package -DskipTests
-          else
-            echo "❌ No Maven configuration found!"
-            echo "Checking project structure..."
-            ls -la
-            exit 1
-          fi
-          
-          # Check if JAR was built
-          echo "Checking for built JAR files..."
-          find . -name "*.jar" -type f
-          
-          # Verify target directory
-          if [ -d "target" ]; then
-            echo "Contents of target directory:"
-            ls -la target/
-          else
-            echo "❌ No target directory found!"
-            exit 1
-          fi
-
-      - name: Create Production Dockerfile
-        run: |
-          echo "Creating production Dockerfile..."
-          cat > Dockerfile.prod << 'EOF'
-          FROM openjdk:17-jre-slim
-          
-          # Create app directory
-          RUN mkdir -p /app
-          WORKDIR /app
-          
-          # Copy the built JAR file
-          COPY target/*.jar app.jar
-          
-          # Expose port
-          EXPOSE 8080
-          
-          # Set JVM options
-          ENV JAVA_OPTS="-Xms512m -Xmx1024m"
-          
-          # Run the application
-          CMD ["sh", "-c", "java $JAVA_OPTS -jar app.jar"]
-          EOF
-          
-          echo "Production Dockerfile created:"
-          cat Dockerfile.prod
-
       - name: Build Docker image for Petclinic
         run: |
           echo "Building Petclinic Docker image..."
-          
-          # Build using the production Dockerfile
-          docker build -t petclinic:latest -f Dockerfile.prod .
-          
-          # Inspect the built image
-          echo "=== BUILT IMAGE INSPECTION ==="
-          docker inspect petclinic:latest | jq '.[0] | {Config: .Config.Cmd, Entrypoint: .Config.Entrypoint, WorkingDir: .Config.WorkingDir}'
-          
-          # Verify the JAR file is in the image
-          echo "=== CHECKING JAR FILE IN IMAGE ==="
-          docker run --rm petclinic:latest ls -la /app/
-          
+          docker build -t petclinic:latest -f .devcontainer/Dockerfile .
           echo "Docker image built successfully"
 
       - name: Deploy Petclinic container
         run: |
           echo "Deploying Petclinic container..."
-          
-          # Deploy with the properly built image
           docker run -d --name petclinic -p 8080:8080 \
             --network host \
             -e SPRING_DATASOURCE_URL=jdbc:postgresql://localhost:5432/demo \
@@ -137,104 +66,42 @@ jobs:
             -e SPRING_PROFILES_ACTIVE=postgres \
             -e JAVA_OPTS="-Xms512m -Xmx1024m" \
             petclinic:latest
-          
-          echo "Container started. Checking initial status..."
-          sleep 5
-          
-          # Check if container is still running
-          if ! docker ps --filter name=petclinic --format "table {{.Names}}\t{{.Status}}" | grep petclinic; then
-            echo "❌ Container exited immediately!"
-            echo "=== CONTAINER LOGS ==="
-            docker logs petclinic
-            exit 1
-          fi
-          
-          # Check processes inside container
-          echo "✅ Container is running. Checking processes..."
-          docker exec petclinic ps aux
-          
-          echo "✅ Petclinic container deployed successfully"
+          echo "Petclinic container deployed successfully"
 
       - name: Wait for Petclinic to start
         run: |
           echo "Waiting for Petclinic application to start..."
-          
-          # First, check if container is still running
-          if ! docker ps --filter name=petclinic -q; then
-            echo "❌ Petclinic container has stopped!"
-            echo "=== CONTAINER LOGS ==="
-            docker logs petclinic
-            exit 1
-          fi
-          
-          for i in {1..40}; do  # Reduced from 60 since we know it's not working
-            # Check container health first
-            if ! docker ps --filter name=petclinic -q; then
-              echo "❌ Container died during startup!"
-              docker logs petclinic
-              exit 1
-            fi
-            
-            # Check if application is responding
+          for i in {1..480}; do
             if curl -s -f http://localhost:8080/actuator/health >/dev/null 2>&1; then
-              echo "✅ Petclinic is running!"
+              echo "Petclinic is running!"
               break
             fi
+            echo "Waiting for Petclinic... (attempt $i/60)"
             
-            # Alternative check - try main page
-            if curl -s -f http://localhost:8080/ >/dev/null 2>&1; then
-              echo "✅ Petclinic main page is responding!"
-              break
-            fi
-            
-            echo "Waiting for Petclinic... (attempt $i/40)"
-            
-            # Show debugging info every 5 attempts
+            # Show container status and logs every 5 attempts for debugging
             if [ $((i % 5)) -eq 0 ]; then
               echo "--- Debugging Info (attempt $i) ---"
-              
-              # Check processes inside container
-              echo "Processes in container:"
-              docker exec petclinic ps aux 2>/dev/null || echo "Cannot check processes"
-              
-              # Check Java process specifically
-              echo "Java processes:"
-              docker exec petclinic pgrep -fl java 2>/dev/null || echo "No Java processes found"
-              
-              # Show recent logs
-              echo "Recent logs:"
-              docker logs --tail 15 petclinic 2>&1
-              
-              # Check disk space in container
-              echo "Disk usage:"
-              docker exec petclinic df -h 2>/dev/null || echo "Cannot check disk"
-              
+              echo "Container status:"
+              docker ps --filter name=petclinic
+              echo "Container logs (last 10 lines):"
+              docker logs --tail 10 petclinic 2>&1
+              echo "Memory usage:"
+              docker stats --no-stream petclinic 2>/dev/null || echo "Stats not available"
+              echo "Port status:"
+              netstat -tlnp | grep :8080 || echo "Port 8080 not bound"
               echo "--- End Debug Info ---"
             fi
             
             sleep 5
           done
           
-          # Final comprehensive check
-          if ! curl -s -f http://localhost:8080/actuator/health >/dev/null 2>&1 && ! curl -s -f http://localhost:8080/ >/dev/null 2>&1; then
-            echo "❌ Petclinic failed to start after 200 seconds"
-            echo "=== FINAL DIAGNOSIS ==="
-            
-            echo "Container status:"
+          # Final check and detailed error if failed
+          if ! curl -s -f http://localhost:8080/actuator/health >/dev/null 2>&1; then
+            echo "❌ Petclinic failed to start after 5 minutes"
+            echo "=== FINAL DEBUG INFO ==="
             docker ps -a --filter name=petclinic
-            
-            echo "Container processes:"
-            docker exec petclinic ps aux || echo "No processes running"
-            
-            echo "Full container logs:"
+            echo "=== FULL CONTAINER LOGS ==="
             docker logs petclinic
-            
-            echo "Container environment:"
-            docker exec petclinic env || echo "Cannot check environment"
-            
-            echo "Working directory contents:"
-            docker exec petclinic ls -la / || echo "Cannot list files"
-            
             exit 1
           fi
 
