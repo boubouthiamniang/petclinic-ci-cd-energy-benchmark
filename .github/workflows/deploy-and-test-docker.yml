@@ -49,20 +49,78 @@ jobs:
             sleep 5
           done
 
+      - name: Build Spring Boot Application
+        run: |
+          echo "Building Spring Boot application..."
+          
+          # Check if Maven wrapper exists
+          if [ -f "./mvnw" ]; then
+            echo "Using Maven wrapper..."
+            chmod +x ./mvnw
+            ./mvnw clean package -DskipTests
+          elif [ -f "pom.xml" ]; then
+            echo "Using system Maven..."
+            mvn clean package -DskipTests
+          else
+            echo "❌ No Maven configuration found!"
+            echo "Checking project structure..."
+            ls -la
+            exit 1
+          fi
+          
+          # Check if JAR was built
+          echo "Checking for built JAR files..."
+          find . -name "*.jar" -type f
+          
+          # Verify target directory
+          if [ -d "target" ]; then
+            echo "Contents of target directory:"
+            ls -la target/
+          else
+            echo "❌ No target directory found!"
+            exit 1
+          fi
+
+      - name: Create Production Dockerfile
+        run: |
+          echo "Creating production Dockerfile..."
+          cat > Dockerfile.prod << 'EOF'
+          FROM openjdk:17-jre-slim
+          
+          # Create app directory
+          RUN mkdir -p /app
+          WORKDIR /app
+          
+          # Copy the built JAR file
+          COPY target/*.jar app.jar
+          
+          # Expose port
+          EXPOSE 8080
+          
+          # Set JVM options
+          ENV JAVA_OPTS="-Xms512m -Xmx1024m"
+          
+          # Run the application
+          CMD ["sh", "-c", "java $JAVA_OPTS -jar app.jar"]
+          EOF
+          
+          echo "Production Dockerfile created:"
+          cat Dockerfile.prod
+
       - name: Build Docker image for Petclinic
         run: |
           echo "Building Petclinic Docker image..."
           
-          # Show Dockerfile content for debugging
-          echo "=== DOCKERFILE CONTENT ==="
-          cat .devcontainer/Dockerfile || echo "Cannot read Dockerfile"
-          echo "=========================="
-          
-          docker build -t petclinic:latest -f .devcontainer/Dockerfile .
+          # Build using the production Dockerfile
+          docker build -t petclinic:latest -f Dockerfile.prod .
           
           # Inspect the built image
           echo "=== BUILT IMAGE INSPECTION ==="
-          docker inspect petclinic:latest | jq '.[0] | {Config: .Config.Cmd, Entrypoint: .Config.Entrypoint, WorkingDir: .Config.WorkingDir, Env: .Config.Env}'
+          docker inspect petclinic:latest | jq '.[0] | {Config: .Config.Cmd, Entrypoint: .Config.Entrypoint, WorkingDir: .Config.WorkingDir}'
+          
+          # Verify the JAR file is in the image
+          echo "=== CHECKING JAR FILE IN IMAGE ==="
+          docker run --rm petclinic:latest ls -la /app/
           
           echo "Docker image built successfully"
 
@@ -70,8 +128,7 @@ jobs:
         run: |
           echo "Deploying Petclinic container..."
           
-          # Try running with explicit command if the default CMD is wrong
-          echo "Starting container with explicit Java command..."
+          # Deploy with the properly built image
           docker run -d --name petclinic -p 8080:8080 \
             --network host \
             -e SPRING_DATASOURCE_URL=jdbc:postgresql://localhost:5432/demo \
@@ -79,57 +136,24 @@ jobs:
             -e SPRING_DATASOURCE_PASSWORD=demo \
             -e SPRING_PROFILES_ACTIVE=postgres \
             -e JAVA_OPTS="-Xms512m -Xmx1024m" \
-            petclinic:latest \
-            java -jar /app/spring-petclinic*.jar
+            petclinic:latest
           
           echo "Container started. Checking initial status..."
-          sleep 10
+          sleep 5
           
           # Check if container is still running
           if ! docker ps --filter name=petclinic --format "table {{.Names}}\t{{.Status}}" | grep petclinic; then
-            echo "❌ Container exited immediately with explicit command!"
+            echo "❌ Container exited immediately!"
             echo "=== CONTAINER LOGS ==="
             docker logs petclinic
-            
-            echo "=== TRYING ALTERNATIVE APPROACHES ==="
-            
-            # Try to find the JAR file location
-            echo "Looking for JAR files in the image..."
-            docker run --rm petclinic:latest find / -name "*.jar" 2>/dev/null || echo "Cannot find JAR files"
-            
-            # Try to see what's in common locations
-            echo "Checking common directories..."
-            docker run --rm petclinic:latest ls -la /app/ 2>/dev/null || echo "/app/ not found"
-            docker run --rm petclinic:latest ls -la /usr/src/app/ 2>/dev/null || echo "/usr/src/app/ not found"
-            docker run --rm petclinic:latest ls -la /workspace/ 2>/dev/null || echo "/workspace/ not found"
-            docker run --rm petclinic:latest ls -la / 2>/dev/null || echo "Cannot list root"
-            
-            # Check if Java is available
-            echo "Checking Java availability..."
-            docker run --rm petclinic:latest java -version 2>&1 || echo "Java not found"
-            
             exit 1
           fi
           
-          # Check if any processes are running inside
-          echo "Checking processes inside container..."
-          docker exec petclinic ps aux || {
-            echo "❌ Cannot check processes, trying to restart with proper command"
-            
-            # Stop the current container
-            docker rm -f petclinic
-            
-            # Try with a different approach - let's run interactively first to debug
-            echo "=== CONTAINER DEBUGGING ==="
-            echo "Contents of container:"
-            docker run --rm petclinic:latest find /app /usr/src/app /workspace -name "*.jar" 2>/dev/null || \
-            docker run --rm petclinic:latest find / -maxdepth 3 -name "*.jar" 2>/dev/null || \
-            echo "No JAR files found"
-            
-            exit 1
-          }
+          # Check processes inside container
+          echo "✅ Container is running. Checking processes..."
+          docker exec petclinic ps aux
           
-          echo "Petclinic container deployed successfully"
+          echo "✅ Petclinic container deployed successfully"
 
       - name: Wait for Petclinic to start
         run: |
