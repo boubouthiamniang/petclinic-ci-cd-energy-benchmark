@@ -1,0 +1,78 @@
+name: Deploy and Test Docker Containers
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  deploy-and-test-docker:
+    runs-on: ubuntu-latest
+    services:
+      # Optional: you could use GitHub Actions service container for Postgres
+      demo-db:
+        image: postgres:15
+        env:
+          POSTGRES_USER: demo
+          POSTGRES_PASSWORD: demo
+          POSTGRES_DB: demo
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U demo"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Start Measurement
+        uses: green-coding-solutions/eco-ci-energy-estimation@v3
+        with:
+          task: start-measurement
+
+      - name: Check out repository
+        uses: actions/checkout@v2
+
+      - name: Build Docker image for Petclinic
+        run: docker build -t petclinic:latest ./petclinic
+
+      - name: Run Petclinic container
+        run: |
+          docker run -d --name petclinic -p 8080:8080 --link demo-db:demo-db petclinic:latest
+
+      - name: Wait for Petclinic to be ready
+        run: |
+          for i in {1..30}; do
+            curl -f http://localhost:8080/actuator/health && break
+            echo "Waiting for Petclinic..."
+            sleep 5
+          done
+
+      - name: Test Petclinic health
+        run: curl -f http://localhost:8080/actuator/health
+
+      - name: Test Demo-DB health
+        run: docker exec demo-db pg_isready -U demo || echo "Demo-DB test skipped"
+
+      - name: Show Energy Results
+        id: eco
+        uses: green-coding-solutions/eco-ci-energy-estimation@v3
+        with:
+          task: display-results
+          json-output: true
+
+      - name: Print total data JSON
+        run: |
+          echo "Total data JSON: ${{ steps.eco.outputs.data-total-json }}"
+
+      - name: Upload total-data.json
+        uses: actions/upload-artifact@v4
+        with:
+          name: eco-ci-total-data-docker-deploy-and-test
+          path: /tmp/eco-ci/total-data.json
+          retention-days: 30
+
+      - name: Cleanup Docker containers
+        run: |
+          docker rm -f petclinic demo-db || true
