@@ -1,8 +1,8 @@
 # Java CI with Javac (Fixed)
 name: Java CI with Javac
 on:
-  push:
-    branches: [ main ]
+  #push:
+  #  branches: [ main ]
   pull_request:
     branches: [ main ]
   #schedule:

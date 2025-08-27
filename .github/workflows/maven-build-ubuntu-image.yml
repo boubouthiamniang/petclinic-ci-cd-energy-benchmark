@@ -1,8 +1,8 @@
 # Java CI with Maven (Fixed)
 name: Java CI with Maven
 on:
-  push:
-    branches: [ main ]
+  #push:
+  #  branches: [ main ]
   pull_request:
     branches: [ main ]
   #schedule:
