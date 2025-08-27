@@ -23,11 +23,14 @@ jobs:
         run: |
           sudo snap install microk8s --classic --channel=1.28/stable
           sudo microk8s status --wait-ready
-          sudo usermod -aG microk8s $USER
-          newgrp microk8s
+          # Add the GitHub runner user to microk8s group
+          sudo usermod -a -G microk8s runner
+          # Ensure kube config exists and has correct permissions
           mkdir -p $HOME/.kube
-          microk8s config > $HOME/.kube/config
-          chmod 600 $HOME/.kube/config
+          sudo microk8s config > $HOME/.kube/config
+          sudo chown $(id -u):$(id -g) $HOME/.kube/config
+          # Set environment variable for kubectl
+          export KUBECONFIG=$HOME/.kube/config
 
       - name: Enable MicroK8s services
         run: microk8s enable dns storage
