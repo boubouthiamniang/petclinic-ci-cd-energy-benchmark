@@ -11,46 +11,40 @@ jobs:
     runs-on: ubuntu-latest
     steps:
 
-      - name: Start Measurement
+      - name: Start Energy Measurement
         uses: green-coding-solutions/eco-ci-energy-estimation@v3
         with:
           task: start-measurement
 
-      - name: Check out the repository
+      - name: Check out repository
         uses: actions/checkout@v2
 
       - name: Install MicroK8s
         run: |
           sudo snap install microk8s --classic --channel=1.28/stable
           sudo microk8s status --wait-ready
-          # Add the GitHub runner user to microk8s group
-          sudo usermod -a -G microk8s runner
-          # Ensure kube config exists and has correct permissions
-          mkdir -p $HOME/.kube
-          sudo microk8s config > $HOME/.kube/config
-          sudo chown $(id -u):$(id -g) $HOME/.kube/config
-          # Set environment variable for kubectl
-          export KUBECONFIG=$HOME/.kube/config
+          sudo usermod -aG microk8s $USER
+          sudo chown -R $USER ~/.kube
 
-      - name: Enable MicroK8s services
-        run: microk8s enable dns storage
+      - name: Enable MicroK8s Addons
+        run: sudo microk8s enable dns storage
 
-      - name: Deploy application
-        run: microk8s kubectl apply -f k8s/
+      - name: Deploy Application
+        run: sudo microk8s kubectl apply -f k8s/
 
-      - name: Wait for Pods to be ready
+      - name: Wait for Pods to be Ready
         run: |
-          microk8s kubectl wait --for=condition=ready pod -l app=demo-db --timeout=180s
-          microk8s kubectl wait --for=condition=ready pod -l app=petclinic --timeout=180s
+          sudo microk8s kubectl wait --for=condition=ready pod -l app=demo-db --timeout=180s
+          sudo microk8s kubectl wait --for=condition=ready pod -l app=petclinic --timeout=180s
 
-      - name: Port-forward petclinic
-        run: microk8s kubectl port-forward deploy/petclinic 8080:8080 &
+      - name: Port-forward PetClinic
+        run: sudo microk8s kubectl port-forward deploy/petclinic 8080:8080 &
 
-      - name: Test petclinic health
-        run: microk8s kubectl exec deploy/petclinic -- curl -f http://localhost:8080/actuator/health
+      - name: Test PetClinic Health
+        run: sudo microk8s kubectl exec deploy/petclinic -- curl -f http://localhost:8080/actuator/health
 
-      - name: Test demo-db health
-        run: microk8s kubectl exec deploy/demo-db -- pg_isready || echo "Demo-DB test skipped"
+      - name: Test Demo-DB Health
+        run: sudo microk8s kubectl exec deploy/demo-db -- pg_isready || echo "Demo-DB test skipped"
 
       - name: Show Energy Results
         id: eco
@@ -59,8 +53,9 @@ jobs:
           task: display-results
           json-output: true
 
-      - name: Print total data JSON
-        run: "echo \"Total data JSON: ${{ steps.eco.outputs.data-total-json }}\""
+      - name: Print Total Data JSON
+        run: |
+          echo "Total data JSON: ${{ steps.eco.outputs.data-total-json }}"
 
       - name: Upload total-data.json
         uses: actions/upload-artifact@v4
