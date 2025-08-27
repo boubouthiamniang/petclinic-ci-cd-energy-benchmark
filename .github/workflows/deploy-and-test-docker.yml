@@ -66,42 +66,111 @@ jobs:
             -e SPRING_PROFILES_ACTIVE=postgres \
             -e JAVA_OPTS="-Xms512m -Xmx1024m" \
             petclinic:latest
+          
+          echo "Container started. Checking initial status..."
+          sleep 10
+          
+          # Check if container is still running
+          if ! docker ps --filter name=petclinic --format "table {{.Names}}\t{{.Status}}" | grep petclinic; then
+            echo "❌ Container exited immediately!"
+            echo "=== CONTAINER LOGS ==="
+            docker logs petclinic
+            echo "=== CONTAINER INSPECT ==="
+            docker inspect petclinic | jq '.[] | {State: .State, Config: .Config.Cmd}'
+            exit 1
+          fi
+          
+          # Check if any processes are running inside
+          echo "Checking processes inside container..."
+          docker exec petclinic ps aux || {
+            echo "❌ No processes running inside container!"
+            echo "=== CONTAINER LOGS ==="
+            docker logs petclinic
+            exit 1
+          }
+          
           echo "Petclinic container deployed successfully"
 
       - name: Wait for Petclinic to start
         run: |
           echo "Waiting for Petclinic application to start..."
-          for i in {1..120}; do
+          
+          # First, check if container is still running
+          if ! docker ps --filter name=petclinic -q; then
+            echo "❌ Petclinic container has stopped!"
+            echo "=== CONTAINER LOGS ==="
+            docker logs petclinic
+            exit 1
+          fi
+          
+          for i in {1..40}; do  # Reduced from 60 since we know it's not working
+            # Check container health first
+            if ! docker ps --filter name=petclinic -q; then
+              echo "❌ Container died during startup!"
+              docker logs petclinic
+              exit 1
+            fi
+            
+            # Check if application is responding
             if curl -s -f http://localhost:8080/actuator/health >/dev/null 2>&1; then
-              echo "Petclinic is running!"
+              echo "✅ Petclinic is running!"
               break
             fi
-            echo "Waiting for Petclinic... (attempt $i/60)"
             
-            # Show container status and logs every 5 attempts for debugging
+            # Alternative check - try main page
+            if curl -s -f http://localhost:8080/ >/dev/null 2>&1; then
+              echo "✅ Petclinic main page is responding!"
+              break
+            fi
+            
+            echo "Waiting for Petclinic... (attempt $i/40)"
+            
+            # Show debugging info every 5 attempts
             if [ $((i % 5)) -eq 0 ]; then
               echo "--- Debugging Info (attempt $i) ---"
-              echo "Container status:"
-              docker ps --filter name=petclinic
-              echo "Container logs (last 10 lines):"
-              docker logs --tail 10 petclinic 2>&1
-              echo "Memory usage:"
-              docker stats --no-stream petclinic 2>/dev/null || echo "Stats not available"
-              echo "Port status:"
-              netstat -tlnp | grep :8080 || echo "Port 8080 not bound"
+              
+              # Check processes inside container
+              echo "Processes in container:"
+              docker exec petclinic ps aux 2>/dev/null || echo "Cannot check processes"
+              
+              # Check Java process specifically
+              echo "Java processes:"
+              docker exec petclinic pgrep -fl java 2>/dev/null || echo "No Java processes found"
+              
+              # Show recent logs
+              echo "Recent logs:"
+              docker logs --tail 15 petclinic 2>&1
+              
+              # Check disk space in container
+              echo "Disk usage:"
+              docker exec petclinic df -h 2>/dev/null || echo "Cannot check disk"
+              
               echo "--- End Debug Info ---"
             fi
             
             sleep 5
           done
           
-          # Final check and detailed error if failed
-          if ! curl -s -f http://localhost:8080/actuator/health >/dev/null 2>&1; then
-            echo "❌ Petclinic failed to start after 5 minutes"
-            echo "=== FINAL DEBUG INFO ==="
+          # Final comprehensive check
+          if ! curl -s -f http://localhost:8080/actuator/health >/dev/null 2>&1 && ! curl -s -f http://localhost:8080/ >/dev/null 2>&1; then
+            echo "❌ Petclinic failed to start after 200 seconds"
+            echo "=== FINAL DIAGNOSIS ==="
+            
+            echo "Container status:"
             docker ps -a --filter name=petclinic
-            echo "=== FULL CONTAINER LOGS ==="
+            
+            echo "Container processes:"
+            docker exec petclinic ps aux || echo "No processes running"
+            
+            echo "Full container logs:"
             docker logs petclinic
+            
+            echo "Container environment:"
+            docker exec petclinic env || echo "Cannot check environment"
+            
+            echo "Working directory contents:"
+            docker exec petclinic ls -la / || echo "Cannot list files"
+            
             exit 1
           fi
 
