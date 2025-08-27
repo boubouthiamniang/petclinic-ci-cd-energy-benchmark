@@ -33,12 +33,21 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v2
 
+      - name: Wait for Demo-DB to be healthy
+        run: |
+          for i in {1..30}; do
+            pg_isready -h localhost -U demo && break
+            echo "Waiting for Demo-DB..."
+            sleep 5
+          done
+
       - name: Build Docker image for Petclinic
         run: docker build -t petclinic:latest -f .devcontainer/Dockerfile .
 
       - name: Run Petclinic container
         run: |
           docker run -d --name petclinic -p 8080:8080 \
+            --link demo-db:demo-db \
             -e SPRING_DATASOURCE_URL=jdbc:postgresql://demo-db:5432/demo \
             -e SPRING_DATASOURCE_USERNAME=demo \
             -e SPRING_DATASOURCE_PASSWORD=demo \
@@ -46,8 +55,8 @@ jobs:
 
       - name: Wait for Petclinic to be ready
         run: |
-          for i in {1..30}; do
-            curl -f http://localhost:8080/actuator/health && break
+          for i in {1..60}; do
+            curl -s http://localhost:8080/actuator/health && break
             echo "Waiting for Petclinic..."
             sleep 5
           done
@@ -56,7 +65,11 @@ jobs:
         run: curl -f http://localhost:8080/actuator/health
 
       - name: Test Demo-DB health
-        run: pg_isready -h localhost -U demo || echo "Demo-DB test skipped"
+        run: docker exec demo-db pg_isready -U demo || echo "Demo-DB test skipped"
+
+      - name: Show Petclinic logs on failure
+        if: failure()
+        run: docker logs petclinic
 
       - name: Show Energy Results
         id: eco
@@ -78,4 +91,4 @@ jobs:
 
       - name: Cleanup Docker containers
         run: |
-          docker rm -f petclinic || true
+          docker rm -f petclinic demo-db || true
