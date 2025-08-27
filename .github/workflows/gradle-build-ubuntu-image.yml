@@ -6,9 +6,9 @@ on:
   pull_request:
     branches: [ main ]
 
-  schedule:
+  #schedule:
     # Runs every 30 minutes
-    - cron: "*/30 * * * *"
+    #- cron: "*/30 * * * *"
 
 jobs:
   build:
