@@ -77,8 +77,33 @@ jobs:
               break
             fi
             echo "Waiting for Petclinic... (attempt $i/60)"
+            
+            # Show container status and logs every 5 attempts for debugging
+            if [ $((i % 5)) -eq 0 ]; then
+              echo "--- Debugging Info (attempt $i) ---"
+              echo "Container status:"
+              docker ps --filter name=petclinic
+              echo "Container logs (last 10 lines):"
+              docker logs --tail 10 petclinic 2>&1
+              echo "Memory usage:"
+              docker stats --no-stream petclinic 2>/dev/null || echo "Stats not available"
+              echo "Port status:"
+              netstat -tlnp | grep :8080 || echo "Port 8080 not bound"
+              echo "--- End Debug Info ---"
+            fi
+            
             sleep 5
           done
+          
+          # Final check and detailed error if failed
+          if ! curl -s -f http://localhost:8080/actuator/health >/dev/null 2>&1; then
+            echo "❌ Petclinic failed to start after 5 minutes"
+            echo "=== FINAL DEBUG INFO ==="
+            docker ps -a --filter name=petclinic
+            echo "=== FULL CONTAINER LOGS ==="
+            docker logs petclinic
+            exit 1
+          fi
 
       - name: Verify Deployment
         run: |
