@@ -141,26 +141,6 @@ jobs:
           ls -la mvnw* 2>/dev/null || echo "No Maven wrapper found"
           ls -la pom.xml 2>/dev/null || echo "No pom.xml found"
 
-      - name: Show Energy Results
-        id: eco
-        uses: green-coding-solutions/eco-ci-energy-estimation@v3
-        with:
-          task: display-results
-          json-output: true
-
-      - name: Print Energy Metrics
-        run: |
-          echo "=== ENERGY CONSUMPTION RESULTS ==="
-          echo "Total energy data: ${{ steps.eco.outputs.data-total-json }}"
-
-      - name: Upload Energy Data
-        uses: actions/upload-artifact@v4
-        with:
-          name: eco-ci-total-data-docker-deploy
-          path: /tmp/eco-ci/total-data.json
-          retention-days: 30
-        continue-on-error: true
-
       - name: Cleanup on failure
         if: failure()
         run: |
@@ -180,3 +160,23 @@ jobs:
           else
             echo "❌ Deployment failed - check logs above"
           fi
+
+      - name: Show Energy Results
+        id: eco
+        uses: green-coding-solutions/eco-ci-energy-estimation@v3
+        with:
+          task: display-results
+          json-output: true
+
+      - name: Print Energy Metrics
+        run: |
+          echo "=== ENERGY CONSUMPTION RESULTS ==="
+          echo "Total energy data: ${{ steps.eco.outputs.data-total-json }}"
+
+      - name: Upload Energy Data
+        uses: actions/upload-artifact@v4
+        with:
+          name: eco-ci-total-data-docker-deploy
+          path: /tmp/eco-ci/total-data.json
+          retention-days: 30
+        continue-on-error: true
