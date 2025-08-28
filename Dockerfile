@@ -6,15 +6,14 @@ FROM maven:3.9.9-eclipse-temurin-17 AS builder
 # Set working directory
 WORKDIR /app
 
-# Copy Maven project files first (for dependency caching)
-COPY pom.xml .
-COPY mvnw .
+# Copy Maven project files (for dependency caching)
+COPY pom.xml mvnw ./
 COPY .mvn .mvn
 
-# Download dependencies (cached layer)
+# Pre-fetch dependencies
 RUN ./mvnw dependency:go-offline -B
 
-# Copy source code
+# Copy source
 COPY src src
 
 # Build Spring Boot fat JAR
@@ -25,28 +24,28 @@ RUN ./mvnw clean package -DskipTests
 # ========================
 FROM eclipse-temurin:17-jre-jammy
 
-# Install curl for healthcheck
+# Install curl for health checks
 RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
 
 # Create non-root user
 RUN groupadd -r spring && useradd -r -g spring spring
 
-# Set workdir
+# Set working directory
 WORKDIR /app
 
-# Copy built JAR from builder
+# Copy built JAR
 COPY --from=builder /app/target/spring-petclinic-*.jar app.jar
 
-# Change permissions
+# Change ownership
 RUN chown spring:spring app.jar
 USER spring
 
-# Expose application port
+# Expose port
 EXPOSE 8080
 
-# Healthcheck (Spring Boot actuator endpoint)
+# Healthcheck
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
   CMD curl -f http://localhost:8080/actuator/health || exit 1
 
-# Run the application
+# Run the app
 ENTRYPOINT ["java", "-jar", "app.jar"]
