@@ -1,6 +1,8 @@
 name: Deploy Docker Containers (Benchmark)
 
 on:
+  push:
+    branches: [main]
   pull_request:
     branches: [main]
 
