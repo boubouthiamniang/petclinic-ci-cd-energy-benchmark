@@ -1,0 +1,64 @@
+name: Deploy Docker to GitHub Container Registry
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  deploy-ghcr:
+    runs-on: ubuntu-latest
+    env:
+      IMAGE_NAME: petclinic
+      GHCR_USERNAME: ${{ github.actor }}
+      GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    steps:
+
+      - name: Start Measurement
+        uses: green-coding-solutions/eco-ci-energy-estimation@v3
+        with:
+          task: start-measurement
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Build Docker image
+        run: |
+          TAG=${GITHUB_SHA::8}
+          docker build -t ${IMAGE_NAME}:${TAG} .
+          docker tag ${IMAGE_NAME}:${TAG} ghcr.io/${GHCR_USERNAME}/${IMAGE_NAME}:${TAG}
+          docker tag ${IMAGE_NAME}:${TAG} ghcr.io/${GHCR_USERNAME}/${IMAGE_NAME}:latest
+
+      - name: Login to GHCR
+        uses: docker/login-action@v2
+        with:
+          username: ${{ env.GHCR_USERNAME }}
+          password: ${{ env.GHCR_TOKEN }}
+          registry: ghcr.io
+
+      - name: Push to GHCR
+        run: |
+          docker push ghcr.io/${GHCR_USERNAME}/${IMAGE_NAME}:${TAG}
+          docker push ghcr.io/${GHCR_USERNAME}/${IMAGE_NAME}:latest
+
+      - name: Show Energy Results
+        id: eco
+        uses: green-coding-solutions/eco-ci-energy-estimation@v3
+        with:
+          task: display-results
+          json-output: true
+
+      - name: Print Energy Metrics
+        run: |
+          echo "=== ENERGY CONSUMPTION RESULTS ==="
+          echo "Total energy data: ${{ steps.eco.outputs.data-total-json }}"
+
+      - name: Upload Energy Data
+        uses: actions/upload-artifact@v4
+        with:
+          name: eco-ci-total-data-docker-deploy
+          path: /tmp/eco-ci/total-data.json
+          retention-days: 30
+        continue-on-error: true
