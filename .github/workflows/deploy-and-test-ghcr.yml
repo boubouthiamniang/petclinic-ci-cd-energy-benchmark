@@ -6,6 +6,10 @@ on:
   pull_request:
     branches: [main]
 
+permissions:
+  contents: read
+  packages: write
+
 jobs:
   deploy-ghcr:
     runs-on: ubuntu-latest
@@ -20,34 +24,35 @@ jobs:
         uses: green-coding-solutions/eco-ci-energy-estimation@v3
         with:
           task: start-measurement
-
+          
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Set TAG based on commit SHA
+        id: vars
+        run: |
+          # POSIX-safe way to get first 8 characters of SHA
+          TAG=$(echo $GITHUB_SHA | cut -c1-8)
+          echo "TAG=$TAG" >> $GITHUB_ENV
+          echo "Using TAG=$TAG"
+
       - name: Build Docker image
         run: |
-          TAG=${GITHUB_SHA::8}  # <-- Replace with:
-          # TAG=$(echo $GITHUB_SHA | cut -c1-8)
-          echo "TAG=$TAG"
+          echo "Building Docker image..."
           docker build -t ${IMAGE_NAME}:${TAG} .
           docker tag ${IMAGE_NAME}:${TAG} ghcr.io/${GHCR_USERNAME}/${IMAGE_NAME}:${TAG}
           docker tag ${IMAGE_NAME}:${TAG} ghcr.io/${GHCR_USERNAME}/${IMAGE_NAME}:latest
-      
-      - name: Debug env
-        run: |
-          echo "GHCR_USERNAME=$GHCR_USERNAME"
-          echo "IMAGE_NAME=$IMAGE_NAME"
-          echo "TAG=$TAG"
 
-      - name: Login to GHCR
+      - name: Login to GitHub Container Registry
         uses: docker/login-action@v2
         with:
           username: ${{ env.GHCR_USERNAME }}
           password: ${{ env.GHCR_TOKEN }}
           registry: ghcr.io
 
-      - name: Push to GHCR
+      - name: Push Docker image to GHCR
         run: |
+          echo "Pushing Docker images..."
           docker push ghcr.io/${GHCR_USERNAME}/${IMAGE_NAME}:${TAG}
           docker push ghcr.io/${GHCR_USERNAME}/${IMAGE_NAME}:latest
 
