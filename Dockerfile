@@ -9,6 +9,9 @@ WORKDIR /app
 COPY pom.xml mvnw ./
 COPY .mvn .mvn
 
+# Make mvnw executable
+RUN chmod +x mvnw
+
 # Pre-fetch dependencies
 RUN ./mvnw dependency:go-offline -B
 
