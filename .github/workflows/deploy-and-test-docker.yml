@@ -1,4 +1,5 @@
-name: Deploy Docker Containers
+name: Deploy Docker Containers (Benchmark)
+
 on:
   push:
     branches: [main]
@@ -6,7 +7,7 @@ on:
     branches: [main]
 
 jobs:
-  deploy-docker:
+  deploy-docker-benchmark:
     runs-on: ubuntu-latest
     services:
       demo-db:
@@ -24,128 +25,36 @@ jobs:
           --health-retries 5
 
     steps:
-      - name: Start Measurement
+      - name: Start Energy Measurement
         uses: green-coding-solutions/eco-ci-energy-estimation@v3
         with:
           task: start-measurement
 
-      - name: Check out repository
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Install PostgreSQL client
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y postgresql-client
+      - name: Build Docker image
+        run: docker build -t petclinic:latest -f Dockerfile .
 
-      - name: Wait for Demo-DB to be ready
+      - name: Run Petclinic container
         run: |
-          echo "Waiting for PostgreSQL to be ready..."
-          for i in {1..30}; do
-            if pg_isready -h localhost -p 5432 -U demo; then
-              echo "PostgreSQL is ready!"
-              break
-            fi
-            echo "Waiting for Demo-DB... (attempt $i/30)"
-            sleep 5
-          done
-
-      - name: Test Database Connection
-        run: |
-          echo "Testing database connection..."
-          PGPASSWORD=demo psql -h localhost -U demo -d demo -c "SELECT version();"
-          echo "✅ Database connection successful"
-
-      - name: Clear Docker cache
-        run: |
-          echo "Clearing Docker cache to avoid old layers..."
-          docker builder prune -f
-          docker system prune -af || true
-
-      - name: Build Docker image for Petclinic
-        run: |
-          echo "Building Petclinic Docker image..."
-          docker build -t petclinic:latest -f Dockerfile . --progress=plain
-          
-          if [ $? -eq 0 ]; then
-            echo "✅ Docker image built successfully"
-            docker images petclinic:latest
-          else
-            echo "❌ Docker build failed"
-            docker system df
-            df -h
-            exit 1
-          fi
-
-      - name: Deploy Petclinic container
-        run: |
-          echo "Deploying Petclinic container..."
           docker rm -f petclinic 2>/dev/null || true
-
           docker run -d --name petclinic -p 8080:8080 \
             --network host \
             -e SPRING_DATASOURCE_URL=jdbc:postgresql://localhost:5432/demo \
             -e SPRING_DATASOURCE_USERNAME=demo \
             -e SPRING_DATASOURCE_PASSWORD=demo \
-            -e SPRING_PROFILES_ACTIVE=postgres \
-            -e SPRING_JPA_HIBERNATE_DDL_AUTO=update \
-            -e SPRING_JPA_DATABASE_PLATFORM=org.hibernate.dialect.PostgreSQLDialect \
-            -e JAVA_OPTS="-Xms256m -Xmx512m -Djava.security.egd=file:/dev/./urandom" \
-            -e LOGGING_LEVEL_ORG_SPRINGFRAMEWORK_WEB=DEBUG \
-            -e MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE=health,info \
             petclinic:latest
 
-          if [ $? -eq 0 ]; then
-            echo "✅ Container started successfully"
-          else
-            echo "❌ Failed to start container"
-            exit 1
-          fi
-
-      - name: Wait for Petclinic to start
+      - name: Wait for Petclinic to become healthy
+        shell: bash
         run: |
-          echo "Waiting for Petclinic application to start..."
-          for i in {1..60}; do
+          for i in {1..30}; do
             if curl -s -f http://localhost:8080/actuator/health >/dev/null 2>&1; then
-              echo "✅ Petclinic is running and healthy!"
               break
             fi
-            echo "Waiting for Petclinic... (attempt $i/60)"
             sleep 5
           done
-          
-          if ! curl -s -f http://localhost:8080/actuator/health >/dev/null 2>&1; then
-            echo "❌ Petclinic failed to start after 5 minutes"
-            docker ps -a --filter name=petclinic
-            docker logs petclinic
-            exit 1
-          fi
-
-      - name: Verify Deployment
-        run: |
-          echo "=== DEPLOYMENT VERIFICATION ==="
-          docker ps --filter name=petclinic
-          echo "Health endpoint:"
-          curl -s http://localhost:8080/actuator/health || echo "Failed"
-          echo "Main application endpoint:"
-          curl -s -I http://localhost:8080/ | head -1 || echo "Failed"
-
-      - name: Show deployment logs on failure
-        if: failure()
-        run: |
-          echo "=== DEPLOYMENT FAILURE LOGS ==="
-          docker ps -a
-          docker images
-          if docker ps -a --filter name=petclinic | grep -q petclinic; then
-            docker logs petclinic 2>&1
-          else
-            echo "No petclinic container found"
-          fi
-          df -h
-          free -h
-          docker system df
-          ls -la
-          ls -la mvnw* 2>/dev/null || echo "No Maven wrapper found"
-          ls -la pom.xml 2>/dev/null || echo "No pom.xml found"
 
       - name: Show Energy Results
         id: eco
@@ -154,35 +63,9 @@ jobs:
           task: display-results
           json-output: true
 
-      - name: Print Energy Metrics
-        run: |
-          echo "=== ENERGY CONSUMPTION RESULTS ==="
-          echo "Total energy data: ${{ steps.eco.outputs.data-total-json }}"
-
       - name: Upload Energy Data
         uses: actions/upload-artifact@v4
         with:
           name: eco-ci-total-data-docker-deploy
           path: /tmp/eco-ci/total-data.json
           retention-days: 30
-        continue-on-error: true
-
-      - name: Cleanup on failure
-        if: failure()
-        run: |
-          echo "Cleaning up failed deployment..."
-          docker rm -f petclinic || echo "Container already removed"
-
-      - name: Deployment Summary
-        if: always()
-        run: |
-          echo "=== DEPLOYMENT SUMMARY ==="
-          echo "Job Status: ${{ job.status }}"
-          echo "Timestamp: $(date)"
-          
-          if [ "${{ job.status }}" = "success" ]; then
-            echo "✅ Deployment completed successfully!"
-            docker ps --filter name=petclinic --format "table {{.Names}}\t{{.Image}}\t{{.Status}}\t{{.Ports}}"
-          else
-            echo "❌ Deployment failed - check logs above"
-          fi
