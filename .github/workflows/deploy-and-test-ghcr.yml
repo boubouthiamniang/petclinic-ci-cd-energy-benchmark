@@ -26,10 +26,18 @@ jobs:
 
       - name: Build Docker image
         run: |
-          TAG=${GITHUB_SHA::8}
+          TAG=${GITHUB_SHA::8}  # <-- Replace with:
+          # TAG=$(echo $GITHUB_SHA | cut -c1-8)
+          echo "TAG=$TAG"
           docker build -t ${IMAGE_NAME}:${TAG} .
           docker tag ${IMAGE_NAME}:${TAG} ghcr.io/${GHCR_USERNAME}/${IMAGE_NAME}:${TAG}
           docker tag ${IMAGE_NAME}:${TAG} ghcr.io/${GHCR_USERNAME}/${IMAGE_NAME}:latest
+      
+      - name: Debug env
+        run: |
+          echo "GHCR_USERNAME=$GHCR_USERNAME"
+          echo "IMAGE_NAME=$IMAGE_NAME"
+          echo "TAG=$TAG"
 
       - name: Login to GHCR
         uses: docker/login-action@v2

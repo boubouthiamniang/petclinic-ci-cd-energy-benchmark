@@ -1,7 +1,7 @@
 name: Deploy and Test MicroK8s Cluster
 on:
-  push:
-    branches: [main]
+  #push:
+  #  branches: [main]
   pull_request:
     branches: [main]
 
