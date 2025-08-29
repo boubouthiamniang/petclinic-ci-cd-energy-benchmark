@@ -19,12 +19,11 @@ jobs:
       - name: Install k3s
         run: |
           curl -sfL https://get.k3s.io | sh -s - --write-kubeconfig-mode 644
-          echo "Waiting for k3s service to be active..."
-          sudo systemctl is-active --wait k3s
-          echo "Waiting for k3s to be ready..."
-          timeout 60 bash -c 'until sudo k3s kubectl get nodes 2>/dev/null; do echo "Waiting for nodes..."; sleep 2; done'
-          echo "Waiting for node to be Ready..."
-          sudo k3s kubectl wait --for=condition=Ready nodes --all --timeout=60s
+          echo "Waiting for k3s to start up..."
+          sleep 30
+          echo "Checking k3s status..."
+          sudo systemctl status k3s --no-pager
+          sudo k3s kubectl get nodes
       
       - name: Set up kubectl for k3s
         run: |
