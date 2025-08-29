@@ -1,0 +1,68 @@
+name: Deploy Docker to Docker Hub
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  deploy-dockerhub:
+    runs-on: ubuntu-latest
+    env:
+      IMAGE_NAME: petclinic
+    steps:
+      - name: Start Measurement
+        uses: green-coding-solutions/eco-ci-energy-estimation@v3
+        with:
+          task: start-measurement
+         
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Set TAG based on commit SHA
+        id: vars
+        run: |
+          # POSIX-safe way to get first 8 characters of SHA
+          TAG=$(echo $GITHUB_SHA | cut -c1-8)
+          echo "TAG=$TAG" >> $GITHUB_ENV
+          echo "Using TAG=$TAG"
+      
+      - name: Build Docker image
+        run: |
+          echo "Building Docker image..."
+          docker build -t ${IMAGE_NAME}:${TAG} .
+          docker tag ${IMAGE_NAME}:${TAG} ${{ secrets.DOCKERHUB_USERNAME }}/${IMAGE_NAME}:${TAG}
+          docker tag ${IMAGE_NAME}:${TAG} ${{ secrets.DOCKERHUB_USERNAME }}/${IMAGE_NAME}:latest
+      
+      - name: Login to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      
+      - name: Push Docker image to Docker Hub
+        run: |
+          echo "Pushing Docker images..."
+          docker push ${{ secrets.DOCKERHUB_USERNAME }}/${IMAGE_NAME}:${TAG}
+          docker push ${{ secrets.DOCKERHUB_USERNAME }}/${IMAGE_NAME}:latest
+      
+      - name: Show Energy Results
+        id: eco
+        uses: green-coding-solutions/eco-ci-energy-estimation@v3
+        with:
+          task: display-results
+          json-output: true
+      
+      - name: Print Energy Metrics
+        run: |
+          echo "=== ENERGY CONSUMPTION RESULTS ==="
+          echo "Total energy data: ${{ steps.eco.outputs.data-total-json }}"
+      
+      - name: Upload Energy Data
+        uses: actions/upload-artifact@v4
+        with:
+          name: eco-ci-total-data-docker-deploy
+          path: /tmp/eco-ci/total-data.json
+          retention-days: 30
+        continue-on-error: true
