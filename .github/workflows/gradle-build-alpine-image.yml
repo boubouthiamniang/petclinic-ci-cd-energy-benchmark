@@ -10,88 +10,43 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    container:
-      image: alpine:3.20
     strategy:
       matrix:
-        java: [ '17', '21' ]
-        # Note: Alpine uses different JDK distributions
-        # We'll use Eclipse Temurin which has good Alpine support
+        java: [ '17' ] # '21' ]
         distribution: [ 'temurin' ]
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-      - name: Install system dependencies
-        run: |
-          apk update
-          apk add --no-cache \
-            git \
-            curl \
-            bash \
-            nodejs \
-            npm \
-            python3 \
-            py3-pip
-      
       - name: Start Measurement
         uses: green-coding-solutions/eco-ci-energy-estimation@v3
         with:
           task: start-measurement
-      
-      - name: Checkout repository
-        uses: actions/checkout@v4
-      
-      - name: Install Java ${{ matrix.java }}
+
+      - name: Build in Alpine container
         run: |
-          # Install OpenJDK from Alpine packages
-          case "${{ matrix.java }}" in
-            "17")
-              apk add --no-cache openjdk17
-              export JAVA_HOME=/usr/lib/jvm/java-17-openjdk
-              ;;
-            "21")
-              apk add --no-cache openjdk21
-              export JAVA_HOME=/usr/lib/jvm/java-21-openjdk
-              ;;
-          esac
-          echo "JAVA_HOME=$JAVA_HOME" >> $GITHUB_ENV
-          echo "$JAVA_HOME/bin" >> $GITHUB_PATH
-          java -version
-      
-      - name: Install Gradle
-        run: |
-          # Install Gradle manually since setup-gradle action might not work in Alpine container
-          GRADLE_VERSION=8.10.2
-          cd /opt
-          curl -L https://services.gradle.org/distributions/gradle-${GRADLE_VERSION}-bin.zip -o gradle.zip
-          unzip gradle.zip
-          rm gradle.zip
-          ln -s /opt/gradle-${GRADLE_VERSION}/bin/gradle /usr/local/bin/gradle
-          gradle --version
-      
-      - name: Make gradlew executable
-        run: chmod +x ./gradlew
-      
-      - name: Build with Gradle
-        run: ./gradlew build --exclude-task test
-      
+          docker run --rm \
+            -v ${{ github.workspace }}:/workspace \
+            -w /workspace \
+            alpine:3.20 \
+            sh -c "
+              apk add --no-cache openjdk${{ matrix.java }} gradle git bash python3 py3-pip && \
+              chmod +x ./gradlew && \
+              ./gradlew build --exclude-task test
+            "
+
       - name: Get Build Measurement
-        id: total-measurement-step
         uses: green-coding-solutions/eco-ci-energy-estimation@v3
         with:
           task: get-measurement
           label: 'Build gradle alpine'
-      
+
       - name: Show Energy Results
-        id: eco
         uses: green-coding-solutions/eco-ci-energy-estimation@v3
         with:
           task: display-results
           json-output: true
-      
-      - name: Print total data JSON
-        run: |
-          echo "Total data JSON: ${{ steps.eco.outputs.data-total-json }}"
-      
+
       - name: Upload total-data.json
         uses: actions/upload-artifact@v4
         with:
