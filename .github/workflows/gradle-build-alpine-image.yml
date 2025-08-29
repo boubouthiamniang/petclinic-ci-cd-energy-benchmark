@@ -19,12 +19,7 @@ jobs:
         # We'll use Eclipse Temurin which has good Alpine support
         distribution: [ 'temurin' ]
     steps:
-      
-      - name: Start Measurement
-        uses: green-coding-solutions/eco-ci-energy-estimation@v3
-        with:
-          task: start-measurement
-      
+
       - name: Install system dependencies
         run: |
           apk update
@@ -33,8 +28,12 @@ jobs:
             curl \
             bash \
             nodejs \
-            npm \
-            bash
+            npm
+      
+      - name: Start Measurement
+        uses: green-coding-solutions/eco-ci-energy-estimation@v3
+        with:
+          task: start-measurement
       
       - name: Checkout repository
         uses: actions/checkout@v4
