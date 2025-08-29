@@ -1,9 +1,12 @@
 name: Deploy and Test MicroK8s Cluster
 on:
-  #push:
-  #  branches: [main]
+  push:
+    branches: [main]
   pull_request:
     branches: [main]
+  schedule:
+    # Runs every 30 minutes
+    - cron: "*/30 * * * *"
 
 jobs:
   deploy-and-test-microk8s:

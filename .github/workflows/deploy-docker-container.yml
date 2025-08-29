@@ -1,9 +1,12 @@
 name: Deploy Docker Containers
 on:
-  #push:
-  #  branches: [main]
+  push:
+    branches: [main]
   pull_request:
     branches: [main]
+  schedule:
+    # Runs every 30 minutes
+    - cron: "*/30 * * * *"
 
 jobs:
   deploy-docker:

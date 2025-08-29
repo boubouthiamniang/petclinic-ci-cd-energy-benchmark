@@ -1,17 +1,16 @@
 name: Deploy and Test Cluster
-
 on:
-  #push:
-  #  branches: [main]
+  push:
+    branches: [main]
     #paths:
     #  - 'k8s/**'
   pull_request:
     branches: [main]
     #paths:
     #  - 'k8s/**'
-  #schedule:
+  schedule:
     # Runs every 30 minutes
-    #- cron: "*/30 * * * *"
+    - cron: "*/30 * * * *"
 
 jobs:
   deploy-and-test-cluster:
