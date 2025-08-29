@@ -7,7 +7,6 @@ on:
   #schedule:
     # Runs every 30 minutes
   #  - cron: "*/30 * * * *"
-    
 
 jobs:
   deploy-docker:
@@ -58,12 +57,6 @@ jobs:
           echo "Testing database connection..."
           PGPASSWORD=demo psql -h localhost -U demo -d demo -c "SELECT version();"
           echo "✅ Database connection successful"
-
-      - name: Clear Docker cache
-        run: |
-          echo "Clearing Docker cache to avoid old layers..."
-          docker builder prune -f
-          docker system prune -af || true
 
       - name: Build Docker image for Petclinic
         run: |
