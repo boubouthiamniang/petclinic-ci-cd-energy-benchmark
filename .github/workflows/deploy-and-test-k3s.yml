@@ -1,7 +1,7 @@
 name: Deploy and Test k3s Cluster
 on:
-  push:
-    branches: [main]
+  #push:
+  #  branches: [main]
   pull_request:
     branches: [main]
 jobs:
@@ -19,7 +19,11 @@ jobs:
       - name: Install k3s
         run: |
           curl -sfL https://get.k3s.io | sh -s - --write-kubeconfig-mode 644
+          echo "Waiting for k3s service to be active..."
+          sudo systemctl is-active --wait k3s
           echo "Waiting for k3s to be ready..."
+          timeout 60 bash -c 'until sudo k3s kubectl get nodes 2>/dev/null; do echo "Waiting for nodes..."; sleep 2; done'
+          echo "Waiting for node to be Ready..."
           sudo k3s kubectl wait --for=condition=Ready nodes --all --timeout=60s
       
       - name: Set up kubectl for k3s
@@ -27,24 +31,31 @@ jobs:
           mkdir -p ~/.kube
           sudo cp /etc/rancher/k3s/k3s.yaml ~/.kube/config
           sudo chown $(id -u):$(id -g) ~/.kube/config
-          export KUBECONFIG=~/.kube/config
+          # Verify the kubeconfig content
+          echo "=== Kubeconfig content ==="
+          cat ~/.kube/config
           echo "KUBECONFIG=$HOME/.kube/config" >> $GITHUB_ENV
       
       - name: Verify k3s cluster
         run: |
+          echo "=== Checking k3s service ==="
+          sudo systemctl status k3s --no-pager
+          echo "=== Testing with k3s kubectl ==="
+          sudo k3s kubectl get nodes
+          echo "=== Testing with regular kubectl ==="
           kubectl cluster-info
           kubectl get nodes -o wide
       
       - name: Deploy application
-        run: kubectl apply -f k8s/
+        run: sudo k3s kubectl apply -f k8s/
       
       - name: Wait for Pods to be ready
         run: |
-          kubectl wait --for=condition=ready pod -l app=demo-db --timeout=180s
-          kubectl wait --for=condition=ready pod -l app=petclinic --timeout=180s
+          sudo k3s kubectl wait --for=condition=ready pod -l app=demo-db --timeout=180s
+          sudo k3s kubectl wait --for=condition=ready pod -l app=petclinic --timeout=180s
       
       - name: Port-forward petclinic
-        run: kubectl port-forward deploy/petclinic 8080:8080 &
+        run: sudo k3s kubectl port-forward deploy/petclinic 8080:8080 &
       
       - name: Wait for port-forward to establish
         run: |
@@ -56,16 +67,16 @@ jobs:
           timeout 30 bash -c 'until curl -f http://localhost:8080/actuator/health; do sleep 2; done'
       
       - name: Test demo-db health
-        run: kubectl exec deploy/demo-db -- pg_isready || echo "Demo-DB test skipped"
+        run: sudo k3s kubectl exec deploy/demo-db -- pg_isready || echo "Demo-DB test skipped"
       
       - name: Show cluster status for debugging
         if: failure()
         run: |
           echo "=== DEBUGGING INFO ==="
-          kubectl get all
-          kubectl describe pods
-          kubectl logs -l app=petclinic --tail=50 || true
-          kubectl logs -l app=demo-db --tail=50 || true
+          sudo k3s kubectl get all
+          sudo k3s kubectl describe pods
+          sudo k3s kubectl logs -l app=petclinic --tail=50 || true
+          sudo k3s kubectl logs -l app=demo-db --tail=50 || true
       
       - name: Show Energy Results
         id: eco
