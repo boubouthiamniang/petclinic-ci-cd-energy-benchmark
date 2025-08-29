@@ -1,8 +1,8 @@
 name: Deploy and Test Minikube Cluster
 
 on:
-  push:
-    branches: [main]
+  #push:
+  #  branches: [main]
   pull_request:
     branches: [main]
 
@@ -30,6 +30,14 @@ jobs:
       - name: Start Minikube
         run: |
           sudo minikube start --driver=docker --kubernetes-version=stable
+          # Ensure kubectl points to the Minikube cluster
+          minikube update-context
+          # Copy kubeconfig so runner user can access it
+          mkdir -p $HOME/.kube $HOME/.minikube
+          sudo cp -r /root/.kube/* $HOME/.kube/ || true
+          sudo cp -r /root/.minikube/* $HOME/.minikube/ || true
+          sudo chown -R $USER $HOME/.kube $HOME/.minikube
+          echo "KUBECONFIG=$HOME/.kube/config" >> $GITHUB_ENV
           kubectl cluster-info
           kubectl get nodes
 
