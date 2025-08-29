@@ -28,7 +28,9 @@ jobs:
             curl \
             bash \
             nodejs \
-            npm
+            npm \
+            python3 \
+            py3-pip
       
       - name: Start Measurement
         uses: green-coding-solutions/eco-ci-energy-estimation@v3
