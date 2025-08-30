@@ -8,9 +8,9 @@ on:
     branches: [main]
     #paths:
     #  - 'k8s/**'
-  schedule:
+  #schedule:
     # Runs every 30 minutes
-    - cron: "*/30 * * * *"
+  #  - cron: "*/30 * * * *"
 
 jobs:
   deploy-and-test-cluster:
