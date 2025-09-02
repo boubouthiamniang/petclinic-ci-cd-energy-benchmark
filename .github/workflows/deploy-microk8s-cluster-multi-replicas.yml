@@ -34,8 +34,8 @@ jobs:
 
       - name: Wait for Pods
         run: |
-          sudo microk8s.kubectl wait --for=condition=ready pod -l app=demo-db --timeout=300s
-          sudo microk8s.kubectl wait --for=condition=ready pod -l app=petclinic --timeout=300s
+          sudo microk8s.kubectl wait --for=condition=ready pod -l app=demo-db --timeout=600s
+          sudo microk8s.kubectl wait --for=condition=ready pod -l app=petclinic --timeout=600s
 
       - name: Show Energy Results
         id: eco
