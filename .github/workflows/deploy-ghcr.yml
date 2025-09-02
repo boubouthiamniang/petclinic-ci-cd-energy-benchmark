@@ -1,7 +1,7 @@
 name: Deploy Docker to GitHub Container Registry
 on:
-  push:
-    branches: [main]
+  #push:
+  #  branches: [main]
   pull_request:
     branches: [main]
   #schedule:

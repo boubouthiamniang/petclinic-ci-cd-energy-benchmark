@@ -1,0 +1,52 @@
+name: Deploy and Test k3d Cluster with Multiple Replicas
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  deploy-and-test-k3d:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        replicas: [1, 5, 10]
+
+    steps:
+      - name: Start Measurement
+        uses: green-coding-solutions/eco-ci-energy-estimation@v3
+        with:
+          task: start-measurement
+
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Install k3d
+        run: curl -s https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | bash
+
+      - name: Create k3d cluster
+        run: k3d cluster create ci-cluster --wait
+
+      - name: Deploy app
+        run: kubectl apply -f k8s/
+
+      - name: Scale Petclinic
+        run: kubectl scale deploy/petclinic --replicas=${{ matrix.replicas }}
+
+      - name: Wait for Pods
+        run: |
+          kubectl wait --for=condition=ready pod -l app=demo-db --timeout=300s
+          kubectl wait --for=condition=ready pod -l app=petclinic --timeout=300s
+
+      - name: Show Energy Results
+        id: eco
+        uses: green-coding-solutions/eco-ci-energy-estimation@v3
+        with:
+          task: display-results
+          json-output: true
+
+      - name: Upload results
+        uses: actions/upload-artifact@v4
+        with:
+          name: energy-results-k3d-${{ matrix.replicas }}-replicas
+          path: /tmp/eco-ci/total-data.json

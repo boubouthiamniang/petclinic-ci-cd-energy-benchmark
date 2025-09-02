@@ -1,7 +1,7 @@
 name: Deploy and Test kind Cluster
 on:
-  push:
-    branches: [main]
+  #push:
+  #  branches: [main]
     #paths:
     #  - 'k8s/**'
   pull_request:

@@ -1,0 +1,54 @@
+name: Deploy and Test k3s Cluster with Multiple Replicas
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  deploy-and-test-k3s:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        replicas: [1, 5, 10]
+
+    steps:
+      - name: Start Measurement
+        uses: green-coding-solutions/eco-ci-energy-estimation@v3
+        with:
+          task: start-measurement
+
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Install k3s
+        run: |
+          curl -sfL https://get.k3s.io | sh -s - --write-kubeconfig-mode 644
+          sleep 30
+          mkdir -p ~/.kube
+          sudo cp /etc/rancher/k3s/k3s.yaml ~/.kube/config
+          sudo chown $(id -u):$(id -g) ~/.kube/config
+
+      - name: Deploy app
+        run: kubectl apply -f k8s/
+
+      - name: Scale Petclinic
+        run: kubectl scale deploy/petclinic --replicas=${{ matrix.replicas }}
+
+      - name: Wait for Pods
+        run: |
+          kubectl wait --for=condition=ready pod -l app=demo-db --timeout=300s
+          kubectl wait --for=condition=ready pod -l app=petclinic --timeout=300s
+
+      - name: Show Energy Results
+        id: eco
+        uses: green-coding-solutions/eco-ci-energy-estimation@v3
+        with:
+          task: display-results
+          json-output: true
+
+      - name: Upload results
+        uses: actions/upload-artifact@v4
+        with:
+          name: energy-results-k3s-${{ matrix.replicas }}-replicas
+          path: /tmp/eco-ci/total-data.json
