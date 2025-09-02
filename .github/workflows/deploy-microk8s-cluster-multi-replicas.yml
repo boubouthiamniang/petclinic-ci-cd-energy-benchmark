@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        replicas: [1, 5, 10]
+        replicas: [1, 4, 8]
 
     steps:
       - name: Start Measurement
