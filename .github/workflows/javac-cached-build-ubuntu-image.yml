@@ -1,4 +1,3 @@
-# Java CI with Javac (Fixed)
 name: Java CI with Javac Cached
 on:
   #push:

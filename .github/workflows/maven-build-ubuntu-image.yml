@@ -1,4 +1,3 @@
-# Java CI with Maven (Fixed)
 name: Java CI with Maven
 on:
   #push:
