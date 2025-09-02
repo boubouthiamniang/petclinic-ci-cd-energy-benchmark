@@ -35,8 +35,8 @@ jobs:
 
       - name: Wait for Pods
         run: |
-          kubectl wait --for=condition=ready pod -l app=demo-db --timeout=600s
-          kubectl wait --for=condition=ready pod -l app=petclinic --timeout=600s
+          kubectl wait --for=condition=ready pod -l app=demo-db --timeout=1200s
+          kubectl wait --for=condition=ready pod -l app=petclinic --timeout=1200s
 
       - name: Show Energy Results
         id: eco
