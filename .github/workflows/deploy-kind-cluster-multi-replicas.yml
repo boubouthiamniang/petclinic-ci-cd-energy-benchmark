@@ -1,12 +1,12 @@
 name: Deploy and Test kind Cluster with Multiple Replicas
 on:
-  push:
-    branches: [main]
+  #push:
+  #  branches: [main]
   pull_request:
     branches: [main]
-  schedule:
+  #schedule:
     # Runs every 30 minutes
-    - cron: "*/30 * * * *"
+  #  - cron: "*/30 * * * *"
 
 jobs:
   deploy-and-test-kind:
@@ -35,8 +35,8 @@ jobs:
 
       - name: Wait for Pods
         run: |
-          kubectl wait --for=condition=ready pod -l app=demo-db --timeout=1200s
-          kubectl wait --for=condition=ready pod -l app=petclinic --timeout=1200s
+          kubectl wait --for=condition=ready pod -l app=demo-db --timeout=2400s
+          kubectl wait --for=condition=ready pod -l app=petclinic --timeout=2400s
 
       - name: Show Energy Results
         id: eco
