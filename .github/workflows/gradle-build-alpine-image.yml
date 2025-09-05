@@ -8,12 +8,16 @@ on:
 
 jobs:
   build:
-    runs-on: debian-12   # Changed from ubuntu-latest
-    strategy:
-      matrix:
-        java: [ '17' ] #, '21' ]
-        distribution: [ 'temurin' ] #, 'corretto', 'zulu', 'liberica', 'microsoft' ]
+    runs-on: ubuntu-latest
+    container:
+      image: debian:12
     steps:
+      - uses: actions/checkout@v4
+      - name: Install dependencies
+        run: |
+          apt-get update
+          apt-get install -y openjdk-17 gradle
+      # continue with your build steps
 
       - name: Start Measurement
         uses: green-coding-solutions/eco-ci-energy-estimation@v3
