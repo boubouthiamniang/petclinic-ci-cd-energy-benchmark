@@ -58,7 +58,8 @@ jobs:
           json-output: true
 
       - name: Print total data JSON
-        run: echo "Total data JSON: ${{ steps.eco.outputs.data-total-json }}"
+        run: |
+          echo "Total data JSON: ${{ steps.eco.outputs.data-total-json }}"
 
       - name: Upload total-data.json
         uses: actions/upload-artifact@v4
