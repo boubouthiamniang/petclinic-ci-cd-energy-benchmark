@@ -16,10 +16,24 @@ jobs:
       image: alpine:latest
       options: --user root
     steps:
-      - name: Install required packages on Alpine
+      # --- BEFORE SCRIPT: Install Python and dependencies ---
+      - name: Pre-install Python and Alpine dependencies
         run: |
           apk update
-          apk add --no-cache bash curl jq coreutils git openjdk${{matrix.java}}
+          apk add --no-cache \
+            bash \
+            curl \
+            jq \
+            coreutils \
+            git \
+            openjdk${{matrix.java}} \
+            python3 \
+            py3-venv
+
+          python3 --version
+          pip3 --version
+      # --- END BEFORE SCRIPT ---
+
 
       - name: Start Measurement
         uses: green-coding-solutions/eco-ci-energy-estimation@v3
