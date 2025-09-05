@@ -15,17 +15,22 @@ jobs:
       - name: Install JDK and Gradle
         run: |
           apt-get update
-          apt-get install -y wget unzip git curl
-          # Install OpenJDK 17
-          apt-get install -y openjdk-17-jdk
-          # Verify Java
+          apt-get install -y wget unzip git curl software-properties-common
+
+          # Install JDK based on matrix
+          if [ "${{ matrix.java }}" = "17" ]; then
+            apt-get install -y openjdk-17-jdk
+          else
+            apt-get install -y openjdk-21-jdk || echo "JDK 21 not in Debian repo, fallback needed"
+          fi
           java -version
           javac -version
-          # Install Gradle manually (if you want latest)
+
+          # Install Gradle manually
           GRADLE_VERSION=8.4
           wget https://services.gradle.org/distributions/gradle-$GRADLE_VERSION-bin.zip -P /tmp
           unzip -d /opt/gradle /tmp/gradle-$GRADLE_VERSION-bin.zip
-          echo 'export PATH=/opt/gradle/gradle-8.4/bin:$PATH' >> $GITHUB_ENV
+          echo "PATH=/opt/gradle/gradle-$GRADLE_VERSION/bin:\$PATH" >> $GITHUB_ENV
           gradle -v
       # continue with your build steps
 
