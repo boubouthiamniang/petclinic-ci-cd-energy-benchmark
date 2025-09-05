@@ -16,6 +16,12 @@ jobs:
         java: [ '17' ] #, '21' ]
         distribution: [ 'temurin' ] #, 'corretto', 'zulu', 'liberica', 'microsoft' ]
     steps:
+
+      - name: Install system dependencies
+        run: |
+          apt-get update
+          apt-get install -y wget unzip git curl software-properties-common
+          
       - name: Start Measurement
         uses: green-coding-solutions/eco-ci-energy-estimation@v3
         with:
@@ -23,10 +29,6 @@ jobs:
 
       - uses: actions/checkout@v4
 
-      - name: Install system dependencies
-        run: |
-          apt-get update
-          apt-get install -y wget unzip git curl software-properties-common
 
       - name: Set up JDK ${{ matrix.java }}
         uses: actions/setup-java@v4
