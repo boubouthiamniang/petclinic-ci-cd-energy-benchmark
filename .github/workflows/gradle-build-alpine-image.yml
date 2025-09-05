@@ -1,0 +1,68 @@
+name: Java CI with Gradle
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest   # Keep Ubuntu for matrix if you want all distributions, Alpine will run inside container
+    strategy:
+      matrix:
+        java: [ '17' ] #, '21' ]
+        distribution: [ 'temurin' ] #, 'corretto', 'zulu', 'liberica', 'microsoft' ]
+    container:
+      image: alpine:latest
+      options: --user 1000:1000
+    steps:
+      - name: Install required packages on Alpine
+        run: |
+          apk update
+          apk add --no-cache bash curl jq coreutils git openjdk${{matrix.java}}
+
+      - name: Start Measurement
+        uses: green-coding-solutions/eco-ci-energy-estimation@v3
+        with:
+          task: start-measurement
+
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK ${{matrix.java}} (Alpine)
+        run: |
+          export JAVA_HOME=/usr/lib/jvm/java-${{matrix.java}}-openjdk
+          export PATH=$JAVA_HOME/bin:$PATH
+          java -version
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Make gradlew executable
+        run: chmod +x ./gradlew
+
+      - name: Build with Gradle
+        run: ./gradlew build --exclude-task test
+
+      - name: Get Build Measurement
+        id: total-measurement-step
+        uses: green-coding-solutions/eco-ci-energy-estimation@v3
+        with:
+          task: get-measurement
+          label: 'Build gradle alpine' 
+          
+      - name: Show Energy Results
+        id: eco
+        uses: green-coding-solutions/eco-ci-energy-estimation@v3
+        with:
+          task: display-results
+          json-output: true
+
+      - name: Print total data JSON
+        run: echo "Total data JSON: ${{ steps.eco.outputs.data-total-json }}"
+
+      - name: Upload total-data.json
+        uses: actions/upload-artifact@v4
+        with:
+          name: eco-ci-total-data-gradle-${{ matrix.java }}-${{ matrix.distribution }}
+          path: /tmp/eco-ci/total-data.json
+          retention-days: 30
