@@ -32,7 +32,8 @@ jobs:
             gcompat \
             libc6-compat \
             wget \
-            unzip
+            unzip \
+            coreutils
 
       # 2️⃣ Checkout project code
       - name: Checkout repository
@@ -45,7 +46,7 @@ jobs:
           chmod +x /tmp/eco-ci/scripts/*.sh
           ls -l /tmp/eco-ci/scripts/
 
-      # 4️⃣ Start Eco-CI measurement
+      # 4️⃣ Start Eco-CI measurement (all 22 args)
       - name: Start measurement
         env:
           GITHUB_RUN_ID: ${{ github.run_id }}
@@ -55,26 +56,27 @@ jobs:
           GITHUB_SHA: ${{ github.sha }}
         run: |
           bash /tmp/eco-ci/scripts/setup.sh start_measurement \
-            "/tmp/machine_power_data.json" \
-            "$GITHUB_RUN_ID" \
-            "$GITHUB_REF_NAME" \
-            "$GITHUB_REPOSITORY" \
-            "$GITHUB_WORKFLOW" \
-            "$GITHUB_SHA" \
-            "manual" \
-            "true" \
-            "filter_type" \
-            "filter_project" \
-            "filter_machine" \
-            "tags" \
-            "constant" \
-            "0.5" \
-            "API_TOKEN" \
-            "GMT_API_TOKEN" \
-            "true" \
-            "API_ENDPOINT_ADD" \
-            "API_ENDPOINT_BADGE_GET" \
-            "DASHBOARD_URL"
+            "/tmp/machine_power_data.json" \   # $2 machine power data
+            "$GITHUB_RUN_ID" \                 # $3 run ID
+            "$GITHUB_REF_NAME" \               # $4 branch
+            "$GITHUB_REPOSITORY" \             # $5 repo
+            "$GITHUB_WORKFLOW" \               # $6 workflow name
+            "$GITHUB_SHA" \                    # $7 commit hash
+            "manual" \                         # $8 source
+            "true" \                           # $9 send data
+            "filter_type" \                     # $10
+            "filter_project" \                  # $11
+            "filter_machine" \                  # $12
+            "tags" \                            # $13
+            "constant" \                        # $14 CO2 calculation method
+            "0.5" \                             # $15 CO2 grid intensity constant
+            "API_TOKEN" \                        # $16 CO2 grid API token
+            "GMT_API_TOKEN" \                   # $17 GMT API token
+            "true" \                            # $18 JSON output
+            "API_ENDPOINT_ADD" \                # $19 API endpoint add
+            "API_ENDPOINT_BADGE_GET" \          # $20 API endpoint badge
+            "DASHBOARD_URL" \                   # $21 dashboard URL
+            "placeholder22"                     # $22 placeholder to satisfy setup.sh
 
       # 5️⃣ Setup Gradle
       - name: Setup Gradle
@@ -93,8 +95,8 @@ jobs:
       - name: Build with Gradle
         run: ./gradlew build --exclude-task test
 
-      # 8️⃣ Get Eco-CI measurement
-      - name: Get measurement
+      # 8️⃣ Get Eco-CI measurement (end)
+      - name: End measurement
         run: bash /tmp/eco-ci/scripts/setup.sh end_measurement
 
       # 9️⃣ Display Eco-CI results as JSON
