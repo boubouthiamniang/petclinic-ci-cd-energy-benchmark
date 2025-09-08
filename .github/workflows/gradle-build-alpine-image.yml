@@ -1,34 +1,37 @@
 name: Java CI with Gradle (Alpine)
+
 on:
   push:
     branches: [ main ]
   pull_request:
     branches: [ main ]
+
 jobs:
   build:
-    runs-on: ubuntu-latest        # Ubuntu runner is required; container will be Alpine
+    runs-on: ubuntu-latest
     container:
-      image: alpine:latest        # Use Alpine Linux container
+      image: alpine:latest
+
     strategy:
       matrix:
-        java: [ '17' ] #, '21' ]
-        distribution: [ 'temurin' ] #, 'corretto', 'zulu', 'liberica', 'microsoft' ]
+        java: [ '17' ]
+        distribution: [ 'temurin' ]
+
     steps:
       - name: Install system dependencies
         run: |
           apk update
-          apk add --no-cache wget unzip git curl bash gcompat libc6-compat python3 py3-pip
+          apk add --no-cache wget unzip git curl bash gcompat libc6-compat python3 py3-pip openjdk17
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Checkout eco-ci repo
+        run: git clone https://github.com/green-coding-solutions/eco-ci-energy-estimation.git /tmp/eco-ci
 
       - name: Start Measurement
-        uses: green-coding-solutions/eco-ci-energy-estimation@v3
-        with:
-          task: start-measurement
-      - uses: actions/checkout@v4
-      - name: Set up JDK ${{ matrix.java }}
-        uses: actions/setup-java@v4
-        with:
-          java-version: ${{ matrix.java }}
-          distribution: ${{ matrix.distribution }}
+        run: bash /tmp/eco-ci/scripts/start-measurement.sh
+
       - name: Setup Gradle
         run: |
           GRADLE_VERSION=8.4
@@ -36,25 +39,19 @@ jobs:
           unzip -d /opt/gradle /tmp/gradle-$GRADLE_VERSION-bin.zip
           echo "PATH=/opt/gradle/gradle-$GRADLE_VERSION/bin:$PATH" >> $GITHUB_ENV
           gradle -v
+
       - name: Make gradlew executable
         run: chmod +x ./gradlew
+
       - name: Build with Gradle
         run: ./gradlew build --exclude-task test
-      - name: Get Build Measurement
-        id: total-measurement-step
-        uses: green-coding-solutions/eco-ci-energy-estimation@v3
-        with:
-          task: get-measurement
-          label: 'Build gradle alpine'
-      - name: Show Energy Results
-        id: eco
-        uses: green-coding-solutions/eco-ci-energy-estimation@v3 # use hash or @vX here (See note below)
-        with:
-          task: display-results
-          json-output: true
-      - name: Print total data JSON
-        run: |
-          echo "Total data JSON: ${{ steps.eco.outputs.data-total-json }}"
+
+      - name: Get Measurement
+        run: bash /tmp/eco-ci/scripts/get-measurement.sh --label "Build gradle alpine"
+
+      - name: Display Results
+        run: bash /tmp/eco-ci/scripts/display-results.sh --json-output > /tmp/eco-ci/total-data.json
+
       - name: Upload total-data.json
         uses: actions/upload-artifact@v4
         with:
