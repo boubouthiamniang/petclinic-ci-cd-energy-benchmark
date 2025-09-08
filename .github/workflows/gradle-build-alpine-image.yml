@@ -18,22 +18,65 @@ jobs:
         distribution: ['temurin']
 
     steps:
+      # 1️⃣ Install Alpine dependencies
       - name: Install system dependencies
         run: |
           apk update
-          apk add --no-cache wget unzip git curl bash gcompat libc6-compat python3 py3-pip coreutils
+          apk add --no-cache \
+            bash \
+            python3 \
+            py3-pip \
+            coreutils \
+            git \
+            curl \
+            gcompat \
+            libc6-compat \
+            wget \
+            unzip
 
-      - name: Checkout your repository
+      # 2️⃣ Checkout project code
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Clone eco-ci repo
+      # 3️⃣ Clone Eco-CI repository
+      - name: Clone Eco-CI repo
         run: |
           git clone https://github.com/green-coding-solutions/eco-ci-energy-estimation.git /tmp/eco-ci
-          ls /tmp/eco-ci/scripts/
+          chmod +x /tmp/eco-ci/scripts/*.sh
+          ls -l /tmp/eco-ci/scripts/
 
+      # 4️⃣ Start Eco-CI measurement
       - name: Start measurement
-        run: bash /tmp/eco-ci/scripts/start-measurement.sh
+        env:
+          GITHUB_RUN_ID: ${{ github.run_id }}
+          GITHUB_REF_NAME: ${{ github.ref_name }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          GITHUB_WORKFLOW: ${{ github.workflow }}
+          GITHUB_SHA: ${{ github.sha }}
+        run: |
+          bash /tmp/eco-ci/scripts/setup.sh start_measurement \
+            "/tmp/machine_power_data.json" \
+            "$GITHUB_RUN_ID" \
+            "$GITHUB_REF_NAME" \
+            "$GITHUB_REPOSITORY" \
+            "$GITHUB_WORKFLOW" \
+            "$GITHUB_SHA" \
+            "manual" \
+            "true" \
+            "filter_type" \
+            "filter_project" \
+            "filter_machine" \
+            "tags" \
+            "constant" \
+            "0.5" \
+            "API_TOKEN" \
+            "GMT_API_TOKEN" \
+            "true" \
+            "API_ENDPOINT_ADD" \
+            "API_ENDPOINT_BADGE_GET" \
+            "DASHBOARD_URL"
 
+      # 5️⃣ Setup Gradle
       - name: Setup Gradle
         run: |
           GRADLE_VERSION=8.4
@@ -42,19 +85,24 @@ jobs:
           echo "PATH=/opt/gradle/gradle-$GRADLE_VERSION/bin:$PATH" >> $GITHUB_ENV
           gradle -v
 
+      # 6️⃣ Make gradlew executable
       - name: Make gradlew executable
         run: chmod +x ./gradlew
 
+      # 7️⃣ Build project
       - name: Build with Gradle
         run: ./gradlew build --exclude-task test
 
+      # 8️⃣ Get Eco-CI measurement
       - name: Get measurement
-        run: bash /tmp/eco-ci/scripts/get-measurement.sh --label "gradle alpine build"
+        run: bash /tmp/eco-ci/scripts/setup.sh end_measurement
 
-      - name: Display results as JSON
+      # 9️⃣ Display Eco-CI results as JSON
+      - name: Display results
         run: bash /tmp/eco-ci/scripts/display-results.sh --json-output > /tmp/eco-ci/total-data.json
 
-      - name: Upload eco-ci results
+      # 🔟 Upload results as artifact
+      - name: Upload Eco-CI total-data.json
         uses: actions/upload-artifact@v4
         with:
           name: eco-ci-total-data-gradle-${{ matrix.java }}-${{ matrix.distribution }}
