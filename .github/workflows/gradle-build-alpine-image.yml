@@ -1,4 +1,4 @@
-name: Java CI with Gradle (Alpine)
+name: Java CI with Gradle (Alpine) + Eco-CI
 
 on:
   push:
@@ -14,29 +14,31 @@ jobs:
 
     strategy:
       matrix:
-        java: [ '17' ]
-        distribution: [ 'temurin' ]
+        java: ['17']
+        distribution: ['temurin']
 
     steps:
       - name: Install system dependencies
         run: |
           apk update
-          apk add --no-cache wget unzip git curl bash gcompat libc6-compat python3 py3-pip openjdk17
+          apk add --no-cache wget unzip git curl bash gcompat libc6-compat python3 py3-pip coreutils
 
-      - name: Checkout repository
+      - name: Checkout your repository
         uses: actions/checkout@v4
 
-      - name: Checkout eco-ci repo
-        run: git clone https://github.com/green-coding-solutions/eco-ci-energy-estimation.git /tmp/eco-ci
+      - name: Clone eco-ci repo
+        run: |
+          git clone https://github.com/green-coding-solutions/eco-ci-energy-estimation.git /tmp/eco-ci
+          ls /tmp/eco-ci/scripts/
 
-      - name: Start Measurement
+      - name: Start measurement
         run: bash /tmp/eco-ci/scripts/start-measurement.sh
 
       - name: Setup Gradle
         run: |
           GRADLE_VERSION=8.4
-          wget https://services.gradle.org/distributions/gradle-$GRADLE_VERSION-bin.zip -P /tmp
-          unzip -d /opt/gradle /tmp/gradle-$GRADLE_VERSION-bin.zip
+          wget https://services.gradle.org/distributions/gradle-${GRADLE_VERSION}-bin.zip -P /tmp
+          unzip -d /opt/gradle /tmp/gradle-${GRADLE_VERSION}-bin.zip
           echo "PATH=/opt/gradle/gradle-$GRADLE_VERSION/bin:$PATH" >> $GITHUB_ENV
           gradle -v
 
@@ -46,13 +48,13 @@ jobs:
       - name: Build with Gradle
         run: ./gradlew build --exclude-task test
 
-      - name: Get Measurement
-        run: bash /tmp/eco-ci/scripts/get-measurement.sh --label "Build gradle alpine"
+      - name: Get measurement
+        run: bash /tmp/eco-ci/scripts/get-measurement.sh --label "gradle alpine build"
 
-      - name: Display Results
+      - name: Display results as JSON
         run: bash /tmp/eco-ci/scripts/display-results.sh --json-output > /tmp/eco-ci/total-data.json
 
-      - name: Upload total-data.json
+      - name: Upload eco-ci results
         uses: actions/upload-artifact@v4
         with:
           name: eco-ci-total-data-gradle-${{ matrix.java }}-${{ matrix.distribution }}
