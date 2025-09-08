@@ -17,10 +17,8 @@ jobs:
       - name: Install system dependencies
         run: |
           apk update
-          apk add --no-cache wget unzip git curl bash gcompat libc6-compat
-      - name: Install eco-ci dependencies
-        run: |
-          pip3 install requests psutil --break-system-packages
+          apk add --no-cache wget unzip git curl bash gcompat libc6-compat python3 py3-pip
+
       - name: Start Measurement
         uses: green-coding-solutions/eco-ci-energy-estimation@v3
         with:
@@ -42,24 +40,18 @@ jobs:
         run: chmod +x ./gradlew
       - name: Build with Gradle
         run: ./gradlew build --exclude-task test
-      - name: Get Build Measurement (Manual)
+      - name: Get Build Measurement
         id: total-measurement-step
-        run: |
-          # Custom Alpine-compatible energy measurement end
-          START_TIME=$(cat /tmp/eco-ci/start-time)
-          END_TIME=$(date +%s)
-          DURATION=$((END_TIME - START_TIME))
-          echo "Build duration: ${DURATION} seconds"
-          echo "duration=${DURATION}" >> $GITHUB_OUTPUT
-      - name: Show Energy Results (Manual)
+        uses: green-coding-solutions/eco-ci-energy-estimation@v3
+        with:
+          task: get-measurement
+          label: 'Build gradle alpine'
+      - name: Show Energy Results
         id: eco
-        run: |
-          # Custom energy calculation logic (would need to implement actual measurement)
-          DURATION=${{ steps.total-measurement-step.outputs.duration }}
-          echo "Build completed in ${DURATION} seconds"
-          # This would need actual energy calculation logic
-          echo '{"duration": '${DURATION}', "label": "Build gradle alpine"}' > /tmp/eco-ci/total-data.json
-          echo "data-total-json={\"duration\": ${DURATION}}" >> $GITHUB_OUTPUT
+        uses: green-coding-solutions/eco-ci-energy-estimation@v3 # use hash or @vX here (See note below)
+        with:
+          task: display-results
+          json-output: true
       - name: Print total data JSON
         run: |
           echo "Total data JSON: ${{ steps.eco.outputs.data-total-json }}"
