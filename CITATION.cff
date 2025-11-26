@@ -1,0 +1,44 @@
+cff-version: 1.2.0
+title: "petclinic-ci-cd-energy-benchmark"
+message: "If you use this repository, please cite the associated publication."
+type: software
+version: 1.0.0
+date-released: 2025-01-01
+
+authors:
+  - family-names: "Thiam Niang"
+    given-names: "Boubou"
+    orcid: "https://orcid.org/0000-0002-8618-1740"
+    affiliation: "Berger-Levrault, Limonest, France"
+
+  - family-names: "Verhaeghe"
+    given-names: "Benoit"
+    orcid: "https://orcid.org/0000-0002-4588-2698"
+    affiliation: "Berger-Levrault, Limonest, France"
+
+  - family-names: "Shatnawi"
+    given-names: "Anas"
+    orcid: "https://orcid.org/0000-0002-5561-4232"
+    affiliation: "Berger-Levrault, Montpellier, France"
+
+  - family-names: "Khrouf"
+    given-names: "Louay"
+    orcid: "https://orcid.org/0009-0007-4480-4376"
+    affiliation: "Berger-Levrault, Montpellier, France"
+
+abstract: >
+  Benchmarking suite for evaluating the energy consumption of Java CI/CD
+  pipelines, including build tools, JDK distributions, caching strategies,
+  Docker builds, and Kubernetes deployments for the article
+  “Energy Consumption in Java CI/CD Pipelines: An Empirical Evaluation”.
+
+keywords:
+  - CI/CD
+  - Energy Efficiency
+  - Software Engineering
+  - Java
+  - Kubernetes
+  - Benchmarking
+repository-code: "https://github.com/boubouthiamniang/petclinic-ci-cd-energy-benchmark"
+license: "Apache-2.0"
+doi: "110.XXXX/XXXXX"

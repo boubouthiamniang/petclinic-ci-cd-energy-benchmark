@@ -1,0 +1,44 @@
+{
+  "title": "petclinic-ci-cd-energy-benchmark",
+  "description": "Benchmarking suite and reproducible CI/CD workflows for the paper 'Energy Consumption in Java CI/CD Pipelines: An Empirical Evaluation'. Includes code, configuration files, energy measurements, and experimental pipelines.",
+  "upload_type": "software",
+  "creators": [
+    {
+      "name": "Thiam Niang, Boubou",
+      "affiliation": "Berger-Levrault, Limonest, France",
+      "orcid": "0000-0002-8618-1740"
+    },
+    {
+      "name": "Verhaeghe, Benoit",
+      "affiliation": "Berger-Levrault, Limonest, France",
+      "orcid": "0000-0002-4588-2698"
+    },
+    {
+      "name": "Shatnawi, Anas",
+      "affiliation": "Berger-Levrault, Montpellier, France",
+      "orcid": "0000-0002-5561-4232"
+    },
+    {
+      "name": "Khrouf, Louay",
+      "affiliation": "Berger-Levrault, Montpellier, France",
+      "orcid": "0009-0007-4480-4376"
+    }
+  ],
+  "license": "Apache-2.0",
+  "keywords": [
+    "CI/CD",
+    "Java",
+    "Energy Efficiency",
+    "Kubernetes",
+    "Benchmarking",
+    "Sustainable Software Engineering"
+  ],
+  "related_identifiers": [
+    {
+      "relation": "isSupplementTo",
+      "identifier": "10.XXXX/XXXXX", 
+      "resource_type": "publication-article"
+    }
+  ],
+  "version": "1.0.0"
+}  
