@@ -14,8 +14,10 @@ jobs:
     runs-on: ubuntu-slim
     strategy:
       matrix:
-        java: [ '17', '21' ]
-        distribution: [ 'temurin', 'corretto', 'zulu', 'liberica', 'microsoft' ]
+        #java: [ '17', '21' ]
+        java: [ '17']
+        #distribution: [ 'temurin', 'corretto', 'zulu', 'liberica', 'microsoft' ]
+        distribution: [ 'temurin' ]
     steps:
 
       - name: Start Measurement
